@@ -1,0 +1,6 @@
+import { apiFetch } from './client'
+import type { VulnerabilitySummary } from '@/types/vulnerability'
+
+export async function getVulnerabilities(repoId: string): Promise<VulnerabilitySummary> {
+  return apiFetch<VulnerabilitySummary>(`/api/repos/${repoId}/vulnerabilities`)
+}
