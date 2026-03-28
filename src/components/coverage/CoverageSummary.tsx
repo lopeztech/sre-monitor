@@ -22,17 +22,17 @@ function ProgressBar({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-400">{label}</span>
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
         <span
           className={cn(
             'text-sm font-bold tabular-nums',
-            passing ? 'text-green-400' : 'text-red-400',
+            passing ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
           )}
         >
           {formatPercent(pct)}
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         <div
           className={cn(
             'h-2 rounded-full transition-all',
@@ -41,7 +41,7 @@ function ProgressBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-[10px] text-slate-500">
+      <p className="text-[10px] text-slate-400 dark:text-slate-500">
         {metric.covered.toLocaleString()} / {metric.total.toLocaleString()} covered
       </p>
     </div>
@@ -58,14 +58,14 @@ export function CoverageSummary({ data }: CoverageSummaryProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {status === 'passing' ? (
-            <CheckCircle2 size={16} className="text-green-400" />
+            <CheckCircle2 size={16} className="text-green-500" />
           ) : (
-            <XCircle size={16} className="text-red-400" />
+            <XCircle size={16} className="text-red-500" />
           )}
           <span
             className={cn(
               'text-sm font-semibold',
-              status === 'passing' ? 'text-green-400' : 'text-red-400',
+              status === 'passing' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
             )}
           >
             {status === 'passing' ? 'Passing' : 'Below threshold'} — target {formatPercent(threshold, 0)}
@@ -74,7 +74,7 @@ export function CoverageSummary({ data }: CoverageSummaryProps) {
         <div
           className={cn(
             'flex items-center gap-1 text-xs font-medium',
-            deltaPositive ? 'text-green-400' : delta < 0 ? 'text-red-400' : 'text-slate-400',
+            deltaPositive ? 'text-green-600 dark:text-green-400' : delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400',
           )}
         >
           {delta > 0 && <TrendingUp size={12} />}

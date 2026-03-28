@@ -24,8 +24,8 @@ function IndexPage() {
         <Activity size={28} className="text-white" />
       </div>
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-100">Welcome to SRE Monitor</h1>
-        <p className="mt-2 text-sm text-slate-400">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome to SRE Monitor</h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Add a GitHub repository to start monitoring costs, pipelines, security, and coverage.
         </p>
       </div>

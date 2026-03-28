@@ -8,6 +8,7 @@ import {
   CartesianGrid,
 } from 'recharts'
 import type { ErrorRateDataPoint } from '@/types/logs'
+import { ChartTooltip } from '@/components/ui/chart-tooltip'
 
 interface ErrorRateChartProps {
   data: ErrorRateDataPoint[]
@@ -16,21 +17,6 @@ interface ErrorRateChartProps {
 function formatHour(ts: string) {
   const d = new Date(ts)
   return `${d.getHours()}:00`
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 shadow-lg">
-      <p className="mb-1 text-xs text-slate-400">{label}</p>
-      {payload.map((p: { name: string; value: number; color: string }) => (
-        <p key={p.name} className="text-xs font-semibold" style={{ color: p.color }}>
-          {p.name}: {p.value}
-        </p>
-      ))}
-    </div>
-  )
 }
 
 export function ErrorRateChart({ data }: ErrorRateChartProps) {
@@ -47,23 +33,28 @@ export function ErrorRateChart({ data }: ErrorRateChartProps) {
             <stop offset="95%" stopColor="#7f1d1d" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-800" vertical={false} />
         <XAxis
           dataKey="timestamp"
           tickFormatter={formatHour}
-          tick={{ fontSize: 11, fill: '#64748b' }}
+          tick={{ fontSize: 11 }}
+          className="fill-slate-500 dark:fill-slate-500"
           axisLine={false}
           tickLine={false}
           interval={3}
         />
         <YAxis
           allowDecimals={false}
-          tick={{ fontSize: 11, fill: '#64748b' }}
+          tick={{ fontSize: 11 }}
+          className="fill-slate-500 dark:fill-slate-500"
           axisLine={false}
           tickLine={false}
           width={28}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip
+          content={<ChartTooltip />}
+          cursor={{ stroke: '#94a3b8', strokeDasharray: '3 3' }}
+        />
         <Area
           type="monotone"
           dataKey="errorCount"

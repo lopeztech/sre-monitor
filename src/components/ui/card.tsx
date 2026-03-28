@@ -20,7 +20,7 @@ export function Card({ children, className }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-800 bg-slate-900',
+        'rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900',
         className,
       )}
     >
@@ -31,10 +31,10 @@ export function Card({ children, className }: CardProps) {
 
 export function CardHeader({ title, subtitle, action }: CardHeaderProps) {
   return (
-    <div className="flex items-start justify-between border-b border-slate-800 px-6 py-4">
+    <div className="flex items-start justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
       <div>
-        <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
-        {subtitle && <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p>}
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+        {subtitle && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {action && <div className="ml-4 flex-shrink-0">{action}</div>}
     </div>

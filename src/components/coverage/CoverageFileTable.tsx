@@ -12,9 +12,9 @@ interface CoverageFileTableProps {
 type SortKey = 'path' | 'lines' | 'branches' | 'functions'
 
 function coverageColor(pct: number, threshold: number) {
-  if (pct >= threshold) return 'text-green-400'
-  if (pct >= threshold - 10) return 'text-amber-400'
-  return 'text-red-400'
+  if (pct >= threshold) return 'text-green-600 dark:text-green-400'
+  if (pct >= threshold - 10) return 'text-amber-600 dark:text-amber-400'
+  return 'text-red-600 dark:text-red-400'
 }
 
 export function CoverageFileTable({ files, threshold }: CoverageFileTableProps) {
@@ -42,7 +42,7 @@ export function CoverageFileTable({ files, threshold }: CoverageFileTableProps) 
     return (
       <button
         onClick={() => handleSort(k)}
-        className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
+        className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
       >
         {label}
         <ArrowUpDown size={11} />
@@ -54,7 +54,7 @@ export function CoverageFileTable({ files, threshold }: CoverageFileTableProps) 
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-800">
+          <tr className="border-b border-slate-200 dark:border-slate-800">
             <th className="pb-2 text-left">
               <SortHeader label="File" k="path" />
             </th>
@@ -69,11 +69,11 @@ export function CoverageFileTable({ files, threshold }: CoverageFileTableProps) 
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800/50">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
           {sorted.map((file) => (
-            <tr key={file.path} className="hover:bg-slate-800/30 transition-colors">
+            <tr key={file.path} className="hover:bg-slate-50 transition-colors dark:hover:bg-slate-800/30">
               <td className="py-2 pr-4">
-                <p className="font-mono text-xs text-slate-300">{file.path}</p>
+                <p className="font-mono text-xs text-slate-700 dark:text-slate-300">{file.path}</p>
               </td>
               <td className={cn('py-2 pr-4 text-right text-xs font-semibold tabular-nums', coverageColor(file.lines.percentage, threshold))}>
                 {formatPercent(file.lines.percentage)}

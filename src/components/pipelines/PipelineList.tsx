@@ -15,10 +15,10 @@ function RunDot({ conclusion }: { conclusion: PipelineRunConclusion }) {
   if (conclusion === 'failure')
     return <XCircle size={14} className="text-red-500" />
   if (conclusion === 'cancelled')
-    return <Circle size={14} className="text-slate-500" />
+    return <Circle size={14} className="text-slate-400 dark:text-slate-500" />
   if (conclusion === 'skipped')
-    return <SkipForward size={14} className="text-slate-500" />
-  return <Circle size={14} className="text-slate-600" />
+    return <SkipForward size={14} className="text-slate-400 dark:text-slate-500" />
+  return <Circle size={14} className="text-slate-300 dark:text-slate-600" />
 }
 
 function passRateVariant(rate: number) {
@@ -35,8 +35,8 @@ export function PipelineList({ workflows }: PipelineListProps) {
           <CardContent className="pt-4">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="font-medium text-slate-100">{wf.name}</p>
-                <p className="text-xs text-slate-500">{wf.path}</p>
+                <p className="font-medium text-slate-900 dark:text-slate-100">{wf.name}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">{wf.path}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={passRateVariant(wf.passRate7d)}>
@@ -54,17 +54,17 @@ export function PipelineList({ workflows }: PipelineListProps) {
               {wf.recentRuns.map((run) => (
                 <div
                   key={run.id}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-800/50 transition-colors"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors dark:hover:bg-slate-800/50"
                 >
                   <RunDot conclusion={run.conclusion} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs text-slate-200">{run.commitMessage}</p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="truncate text-xs text-slate-700 dark:text-slate-200">{run.commitMessage}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
                       {run.actor} · {run.branch} ·{' '}
                       {run.durationSeconds ? formatDuration(run.durationSeconds) : 'in progress'}
                     </p>
                   </div>
-                  <span className="flex-shrink-0 text-[10px] text-slate-500">
+                  <span className="flex-shrink-0 text-[10px] text-slate-400 dark:text-slate-500">
                     {formatRelativeTime(run.startedAt)}
                   </span>
                 </div>
@@ -72,8 +72,8 @@ export function PipelineList({ workflows }: PipelineListProps) {
             </div>
 
             {/* Run dots summary */}
-            <div className="mt-3 flex items-center gap-1 border-t border-slate-800 pt-3">
-              <p className="mr-2 text-xs text-slate-500">Last {wf.recentRuns.length} runs:</p>
+            <div className="mt-3 flex items-center gap-1 border-t border-slate-200 pt-3 dark:border-slate-800">
+              <p className="mr-2 text-xs text-slate-400 dark:text-slate-500">Last {wf.recentRuns.length} runs:</p>
               {wf.recentRuns.map((run) => (
                 <span
                   key={run.id}
@@ -82,8 +82,8 @@ export function PipelineList({ workflows }: PipelineListProps) {
                     'h-2.5 w-2.5 rounded-full',
                     run.conclusion === 'success' ? 'bg-green-500' :
                     run.conclusion === 'failure' ? 'bg-red-500' :
-                    run.conclusion === 'cancelled' ? 'bg-slate-500' :
-                    'bg-slate-700',
+                    run.conclusion === 'cancelled' ? 'bg-slate-400 dark:bg-slate-500' :
+                    'bg-slate-300 dark:bg-slate-700',
                   )}
                 />
               ))}

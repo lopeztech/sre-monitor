@@ -10,21 +10,21 @@ export function Sidebar() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed)
 
   return (
-    <div className="flex h-full flex-col overflow-hidden border-r border-slate-800 bg-slate-950">
+    <div className="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
       {/* Logo */}
-      <div className="flex h-14 flex-shrink-0 items-center gap-2.5 border-b border-slate-800 px-4">
+      <div className="flex h-14 flex-shrink-0 items-center gap-2.5 border-b border-slate-200 px-4 dark:border-slate-800">
         <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-sky-600">
           <Activity size={14} className="text-white" />
         </div>
         {!collapsed && (
-          <span className="text-sm font-bold text-slate-100">SRE Monitor</span>
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-100">SRE Monitor</span>
         )}
       </div>
 
       {/* Repo list */}
       <nav className="flex-1 overflow-y-auto py-3">
         {!collapsed && (
-          <p className="mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+          <p className="mb-1 px-4 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
             Repositories
           </p>
         )}
@@ -43,12 +43,12 @@ export function Sidebar() {
       </nav>
 
       {/* Add Repository */}
-      <div className="flex-shrink-0 border-t border-slate-800 p-2">
+      <div className="flex-shrink-0 border-t border-slate-200 p-2 dark:border-slate-800">
         <Link
           to="/register"
           className={cn(
-            'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-400',
-            'hover:bg-slate-800 hover:text-slate-100 transition-colors',
+            'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 dark:text-slate-400',
+            'hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors',
             collapsed && 'justify-center',
           )}
         >

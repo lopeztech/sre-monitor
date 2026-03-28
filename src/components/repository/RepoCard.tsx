@@ -1,5 +1,5 @@
 import { Link, useParams } from '@tanstack/react-router'
-import { GitBranch } from 'lucide-react'
+import { GitBranch, Settings } from 'lucide-react'
 import type { RegisteredRepository } from '@/types/repository'
 import { cn } from '@/lib/utils'
 
@@ -16,10 +16,10 @@ const providerLabel: Record<string, string> = {
 }
 
 const providerColor: Record<string, string> = {
-  aws: 'bg-orange-950 text-orange-400',
-  gcp: 'bg-blue-950 text-blue-400',
-  azure: 'bg-sky-950 text-sky-400',
-  unknown: 'bg-slate-800 text-slate-400',
+  aws: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+  gcp: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
+  azure: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400',
+  unknown: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
 }
 
 const statusDot: Record<string, string> = {
@@ -50,8 +50,8 @@ export function RepoCard({ repo, collapsed }: RepoCardProps) {
         className={cn(
           'flex h-9 w-full items-center justify-center rounded-lg transition-colors',
           isActive
-            ? 'bg-sky-950 text-sky-400'
-            : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
+            ? 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400'
+            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
         )}
       >
         <GitBranch size={16} />
@@ -66,22 +66,22 @@ export function RepoCard({ repo, collapsed }: RepoCardProps) {
       className={cn(
         'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 transition-colors',
         isActive
-          ? 'bg-sky-950 text-sky-300'
-          : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100',
+          ? 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300'
+          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100',
       )}
     >
       <div className="relative flex-shrink-0">
         <GitBranch size={16} />
         <span
           className={cn(
-            'absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-slate-950',
+            'absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-white dark:border-slate-950',
             statusDot[repo.status],
           )}
         />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium">{repo.repo}</p>
-        <p className="truncate text-[10px] text-slate-500">{repo.owner}</p>
+        <p className="truncate text-[10px] text-slate-400 dark:text-slate-500">{repo.owner}</p>
       </div>
       <span
         className={cn(
@@ -91,6 +91,16 @@ export function RepoCard({ repo, collapsed }: RepoCardProps) {
       >
         {providerLabel[provider]}
       </span>
+      {isActive && (
+        <Link
+          to="/app/$repoId/settings"
+          params={{ repoId: repo.id }}
+          className="flex-shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors dark:hover:bg-slate-700 dark:hover:text-slate-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Settings size={12} />
+        </Link>
+      )}
     </Link>
   )
 }

@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 antialiased;
+    @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
     font-family: Inter, system-ui, sans-serif;
     margin: 0;
   }
@@ -13,6 +13,9 @@
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
+    scrollbar-color: theme('colors.slate.300') transparent;
+  }
+  .dark .scrollbar-thin {
     scrollbar-color: theme('colors.slate.700') transparent;
   }
 }

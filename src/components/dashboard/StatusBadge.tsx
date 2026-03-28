@@ -11,14 +11,14 @@ const dotColor: Record<HealthStatus, string> = {
   healthy: 'bg-green-500',
   warning: 'bg-amber-500',
   critical: 'bg-red-500',
-  unknown: 'bg-slate-500',
+  unknown: 'bg-slate-400 dark:bg-slate-500',
 }
 
 const textColor: Record<HealthStatus, string> = {
-  healthy: 'text-green-400',
-  warning: 'text-amber-400',
-  critical: 'text-red-400',
-  unknown: 'text-slate-400',
+  healthy: 'text-green-600 dark:text-green-400',
+  warning: 'text-amber-600 dark:text-amber-400',
+  critical: 'text-red-600 dark:text-red-400',
+  unknown: 'text-slate-500 dark:text-slate-400',
 }
 
 const defaultLabels: Record<HealthStatus, string> = {

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,8 +8,10 @@ import { useRegistryStore } from '@/store/registryStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { apiFetch } from '@/api/client'
 import type { RegisteredRepository } from '@/types/repository'
+import { CheckCircle2, Server, GitBranch, Shield, BarChart2, FileCode2, ArrowLeft } from 'lucide-react'
 
 const schema = z.object({
   githubUrl: z
@@ -22,9 +25,17 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+const providerLabel: Record<string, string> = {
+  aws: 'Amazon Web Services',
+  gcp: 'Google Cloud Platform',
+  azure: 'Microsoft Azure',
+  unknown: 'Not detected',
+}
+
 export function RegisterForm() {
   const addRepository = useRegistryStore((s) => s.addRepository)
   const navigate = useNavigate()
+  const [analyzedRepo, setAnalyzedRepo] = useState<RegisteredRepository | null>(null)
 
   const {
     register,
@@ -35,7 +46,7 @@ export function RegisterForm() {
     resolver: zodResolver(schema),
   })
 
-  const onSubmit = async (data: FormValues) => {
+  const onAnalyze = async (data: FormValues) => {
     const parsed = parseGitHubUrl(data.githubUrl)
     if (!parsed) return
 
@@ -44,13 +55,125 @@ export function RegisterForm() {
         method: 'POST',
         body: JSON.stringify({ githubUrl: data.githubUrl }),
       })
-      addRepository(repo)
-      await navigate({ to: '/app/$repoId', params: { repoId: repo.id } })
+      setAnalyzedRepo(repo)
     } catch {
       setError('githubUrl', {
         message: 'Failed to analyze repository. Please try again.',
       })
     }
+  }
+
+  const onConfirm = async () => {
+    if (!analyzedRepo) return
+    addRepository(analyzedRepo)
+    await navigate({ to: '/app/$repoId', params: { repoId: analyzedRepo.id } })
+  }
+
+  if (analyzedRepo) {
+    const analysis = analyzedRepo.analysis!
+    return (
+      <Card className="mx-auto max-w-lg">
+        <CardHeader
+          title="Analysis Complete"
+          subtitle={analyzedRepo.fullName}
+        />
+        <CardContent>
+          <div className="space-y-4">
+            {/* Detection results */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Server size={14} className="flex-shrink-0 text-slate-400" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Cloud Provider</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {providerLabel[analysis.cloudProvider]}
+                    </p>
+                  </div>
+                  {analysis.cloudProvider !== 'unknown' && (
+                    <CheckCircle2 size={14} className="text-green-500" />
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <FileCode2 size={14} className="flex-shrink-0 text-slate-400" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Detected Stack</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {analysis.detectedStack.map((tech) => (
+                        <Badge key={tech} variant="default" size="sm">{tech}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <GitBranch size={14} className="flex-shrink-0 text-slate-400" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">CI/CD</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200">
+                      {analysis.hasGithubActions ? 'GitHub Actions detected' : 'No CI/CD detected'}
+                    </p>
+                  </div>
+                  {analysis.hasGithubActions && (
+                    <CheckCircle2 size={14} className="text-green-500" />
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Shield size={14} className="flex-shrink-0 text-slate-400" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Security</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200">
+                      {analysis.hasDependabot ? 'Dependabot enabled' : 'Dependabot not detected'}
+                    </p>
+                  </div>
+                  {analysis.hasDependabot && (
+                    <CheckCircle2 size={14} className="text-green-500" />
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <BarChart2 size={14} className="flex-shrink-0 text-slate-400" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Coverage</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200">
+                      {analysis.hasCodecov ? 'Codecov integration found' : 'No coverage provider detected'}
+                    </p>
+                  </div>
+                  {analysis.hasCodecov && (
+                    <CheckCircle2 size={14} className="text-green-500" />
+                  )}
+                </div>
+
+                {analysis.infraFiles.length > 0 && (
+                  <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+                    <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">Infrastructure Files</p>
+                    <div className="flex flex-wrap gap-1">
+                      {analysis.infraFiles.map((f) => (
+                        <span key={f} className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[10px] text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={() => setAnalyzedRepo(null)} className="flex-shrink-0">
+                <ArrowLeft size={14} />
+                Back
+              </Button>
+              <Button onClick={onConfirm} className="flex-1">
+                Add Repository
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -60,7 +183,7 @@ export function RegisterForm() {
         subtitle="Add a GitHub repository to start monitoring it"
       />
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={handleSubmit(onAnalyze)} className="space-y-5">
           <Input
             label="GitHub Repository URL"
             placeholder="https://github.com/owner/repo"
@@ -73,7 +196,7 @@ export function RegisterForm() {
             loading={isSubmitting}
             className="w-full"
           >
-            {isSubmitting ? 'Analyzing repository...' : 'Add Repository'}
+            {isSubmitting ? 'Analyzing repository...' : 'Analyze Repository'}
           </Button>
         </form>
       </CardContent>

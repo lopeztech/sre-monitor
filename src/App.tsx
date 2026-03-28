@@ -3,14 +3,18 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { useEffect } from 'react'
 import { useRegistryStore } from '@/store/registryStore'
+import { AuthProvider } from '@/contexts/AuthContext'
+import '@/store/themeStore'
 
 // Import routes
 import { Route as rootRoute } from './routes/__root'
 import { Route as indexRoute } from './routes/index'
 import { Route as registerRoute } from './routes/register'
 import { Route as repoRoute } from './routes/app/$repoId'
+import { Route as repoSettingsRoute } from './routes/app/$repoId.settings'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +29,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   registerRoute,
   repoRoute,
+  repoSettingsRoute,
 ])
 
 const router = createRouter({ routeTree })
@@ -47,8 +52,12 @@ function AppInner() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppInner />
-    </QueryClientProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''}>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AppInner />
+        </QueryClientProvider>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   )
 }

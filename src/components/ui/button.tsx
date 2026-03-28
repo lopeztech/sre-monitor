@@ -12,9 +12,9 @@ const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:
     'bg-sky-600 text-white hover:bg-sky-500 border-transparent focus-visible:ring-sky-500',
   secondary:
-    'bg-slate-700 text-slate-200 hover:bg-slate-600 border-slate-600 focus-visible:ring-slate-500',
+    'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200 focus-visible:ring-slate-400 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 dark:border-slate-600 dark:focus-visible:ring-slate-500',
   ghost:
-    'bg-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100 border-transparent focus-visible:ring-slate-500',
+    'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent focus-visible:ring-slate-400 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus-visible:ring-slate-500',
   danger:
     'bg-red-700 text-white hover:bg-red-600 border-transparent focus-visible:ring-red-500',
 }
@@ -38,7 +38,7 @@ export function Button({
     <button
       className={cn(
         'inline-flex items-center justify-center rounded-lg border font-medium',
-        'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+        'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950',
         'disabled:pointer-events-none disabled:opacity-50',
         variantClasses[variant],
         sizeClasses[size],

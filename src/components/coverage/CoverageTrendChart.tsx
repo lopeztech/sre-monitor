@@ -9,6 +9,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import type { CoverageHistoryPoint } from '@/types/coverage'
+import { ChartTooltip } from '@/components/ui/chart-tooltip'
 
 interface CoverageTrendChartProps {
   history: CoverageHistoryPoint[]
@@ -20,30 +21,16 @@ function formatDate(dateStr: string) {
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 shadow-lg">
-      <p className="mb-1 text-xs text-slate-400">{label}</p>
-      {payload.map((p: { name: string; value: number; color: string }) => (
-        <p key={p.name} className="text-xs font-semibold" style={{ color: p.color }}>
-          {p.name}: {p.value.toFixed(1)}%
-        </p>
-      ))}
-    </div>
-  )
-}
-
 export function CoverageTrendChart({ history, threshold }: CoverageTrendChartProps) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={history} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-800" vertical={false} />
         <XAxis
           dataKey="date"
           tickFormatter={formatDate}
-          tick={{ fontSize: 11, fill: '#64748b' }}
+          tick={{ fontSize: 11 }}
+          className="fill-slate-500 dark:fill-slate-500"
           axisLine={false}
           tickLine={false}
           interval={1}
@@ -51,12 +38,16 @@ export function CoverageTrendChart({ history, threshold }: CoverageTrendChartPro
         <YAxis
           domain={[Math.max(0, Math.min(...history.map((h) => h.linesCoverage)) - 5), 100]}
           tickFormatter={(v) => `${v}%`}
-          tick={{ fontSize: 11, fill: '#64748b' }}
+          tick={{ fontSize: 11 }}
+          className="fill-slate-500 dark:fill-slate-500"
           axisLine={false}
           tickLine={false}
           width={44}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip
+          content={<ChartTooltip formatter={(v) => `${v.toFixed(1)}%`} />}
+          cursor={{ stroke: '#94a3b8', strokeDasharray: '3 3' }}
+        />
         <ReferenceLine
           y={threshold}
           stroke="#f59e0b"
@@ -70,7 +61,7 @@ export function CoverageTrendChart({ history, threshold }: CoverageTrendChartPro
           stroke="#0ea5e9"
           strokeWidth={1.5}
           dot={{ r: 3, fill: '#0ea5e9', strokeWidth: 0 }}
-          activeDot={{ r: 5, fill: '#0ea5e9', strokeWidth: 0 }}
+          activeDot={{ r: 6, fill: '#0ea5e9', stroke: '#fff', strokeWidth: 2 }}
         />
         <Line
           type="monotone"
@@ -79,7 +70,7 @@ export function CoverageTrendChart({ history, threshold }: CoverageTrendChartPro
           stroke="#8b5cf6"
           strokeWidth={1.5}
           dot={{ r: 3, fill: '#8b5cf6', strokeWidth: 0 }}
-          activeDot={{ r: 5, fill: '#8b5cf6', strokeWidth: 0 }}
+          activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
         />
       </LineChart>
     </ResponsiveContainer>

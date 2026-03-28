@@ -1,0 +1,57 @@
+import { useEffect, useRef } from 'react'
+import { X } from 'lucide-react'
+
+interface DialogProps {
+  open: boolean
+  onClose: () => void
+  title: string
+  children: React.ReactNode
+}
+
+export function Dialog({ open, onClose, title, children }: DialogProps) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [open])
+
+  useEffect(() => {
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    if (open) document.addEventListener('keydown', handleEsc)
+    return () => document.removeEventListener('keydown', handleEsc)
+  }, [open, onClose])
+
+  if (!open) return null
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose()
+      }}
+    >
+      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-slate-800">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-5 py-4">{children}</div>
+      </div>
+    </div>
+  )
+}

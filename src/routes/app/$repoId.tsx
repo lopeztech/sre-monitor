@@ -1,5 +1,5 @@
 import { createRoute, useParams } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { Route as rootRoute } from '../__root'
 import { useRegistryStore } from '@/store/registryStore'
 import { useUIStore } from '@/store/uiStore'
@@ -11,10 +11,19 @@ import { useCoverage } from '@/hooks/useCoverage'
 
 // UI
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { Badge } from '@/components/ui/badge'
+import { ErrorState } from '@/components/ui/error-state'
+import { EmptyState } from '@/components/ui/empty-state'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { ExportButton } from '@/components/ui/export-button'
+import {
+  exportCostsByServiceCsv,
+  exportPipelinesCsv,
+  exportVulnerabilitiesCsv,
+  exportLogsCsv,
+  exportCoverageCsv,
+} from '@/lib/export'
 
 // Costs
 import { CostSummary } from '@/components/costs/CostSummary'
@@ -45,10 +54,17 @@ import {
   Shield,
   FileText,
   BarChart2,
-  RefreshCw,
 } from 'lucide-react'
 import { formatCurrency, formatPercent } from '@/lib/formatters'
+import { usePreferencesStore } from '@/store/preferencesStore'
 import { cn } from '@/lib/utils'
+import {
+  CostsTabSkeleton,
+  PipelinesTabSkeleton,
+  SecurityTabSkeleton,
+  LogsTabSkeleton,
+  CoverageTabSkeleton,
+} from '@/components/ui/tab-skeleton'
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -227,26 +243,26 @@ function CoverageOverviewCard({ repoId }: { repoId: string }) {
 
 function CostsTab({ repoId }: { repoId: string }) {
   const { data, isLoading, error, refetch: refetchCosts } = useCosts(repoId)
-  const { activeCostRange, setCostRange } = useUIStore()
+  const { activeCostRange, setCostRange, customCostRange, setCustomCostRange, clearCustomCostRange } = useUIStore()
 
-  if (isLoading)
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-32" />
-        <Skeleton className="h-64" />
-      </div>
-    )
+  if (isLoading) return <CostsTabSkeleton />
 
   if (error || !data)
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="mb-3 text-sm text-slate-400">Failed to load cost data</p>
-          <Button variant="secondary" size="sm" onClick={() => refetchCosts()}>
-            <RefreshCw size={13} /> Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <ErrorState
+        title="Failed to load cost data"
+        description="We couldn't fetch cloud cost information. Check your provider configuration and try again."
+        onRetry={() => refetchCosts()}
+      />
+    )
+
+  if (data.history.length === 0)
+    return (
+      <EmptyState
+        icon={<DollarSign size={22} />}
+        title="No cost data available"
+        description="Cost data will appear here once your cloud provider is connected and billing data is synced."
+      />
     )
 
   return (
@@ -257,31 +273,45 @@ function CostsTab({ repoId }: { repoId: string }) {
         <CardHeader
           title="Daily Cost Trend"
           action={
-            <div className="flex gap-1 rounded-lg border border-slate-800 bg-slate-950 p-1">
+            <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-800 dark:bg-slate-950">
               {(['30d', '60d', '90d'] as const).map((r) => (
                 <button
                   key={r}
                   onClick={() => setCostRange(r)}
                   className={cn(
                     'rounded-md px-2.5 py-0.5 text-xs font-medium transition-colors',
-                    activeCostRange === r
-                      ? 'bg-slate-700 text-slate-100'
-                      : 'text-slate-400 hover:text-slate-200',
+                    activeCostRange === r && !customCostRange
+                      ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',
                   )}
                 >
                   {r}
                 </button>
               ))}
+              <div className="mx-0.5 h-4 w-px bg-slate-300 dark:bg-slate-700" />
+              <DateRangePicker
+                startDate={customCostRange?.start ?? null}
+                endDate={customCostRange?.end ?? null}
+                onRangeChange={setCustomCostRange}
+                onClear={clearCustomCostRange}
+                isActive={!!customCostRange}
+              />
             </div>
           }
         />
         <CardContent>
-          <CostTrendChart data={data.history} range={activeCostRange} />
+          <CostTrendChart data={data.history} range={activeCostRange} customRange={customCostRange} />
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader title="Cost by Service" subtitle="Current vs previous period" />
+        <CardHeader
+          title="Cost by Service"
+          subtitle="Current vs previous period"
+          action={
+            <ExportButton onClick={() => exportCostsByServiceCsv(data.byService)} />
+          }
+        />
         <CardContent>
           <CostByServiceTable services={data.byService} />
         </CardContent>
@@ -295,14 +325,14 @@ function CostsTab({ repoId }: { repoId: string }) {
               {data.anomalies.map((a) => (
                 <div
                   key={a.id}
-                  className="rounded-lg border border-red-900 bg-red-950/30 p-4"
+                  className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30"
                 >
                   <div className="flex items-start justify-between">
-                    <p className="font-medium text-red-300">{a.serviceName}</p>
+                    <p className="font-medium text-red-600 dark:text-red-300">{a.serviceName}</p>
                     <Badge variant="danger">+{formatPercent(a.percentageIncrease)}</Badge>
                   </div>
-                  <p className="mt-1 text-sm text-slate-300">{a.description}</p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{a.description}</p>
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                     Expected {formatCurrency(a.expectedAmount)} · Actual{' '}
                     {formatCurrency(a.actualAmount)}
                   </p>
@@ -319,24 +349,24 @@ function CostsTab({ repoId }: { repoId: string }) {
 function PipelinesTab({ repoId }: { repoId: string }) {
   const { data, isLoading, error, refetch } = usePipelines(repoId)
 
-  if (isLoading)
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-48" />
-        <Skeleton className="h-48" />
-      </div>
-    )
+  if (isLoading) return <PipelinesTabSkeleton />
 
   if (error || !data)
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="mb-3 text-sm text-slate-400">Failed to load pipeline data</p>
-          <Button variant="secondary" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <ErrorState
+        title="Failed to load pipeline data"
+        description="We couldn't fetch CI/CD pipeline information. Ensure GitHub Actions is enabled for this repository."
+        onRetry={() => refetch()}
+      />
+    )
+
+  if (data.workflows.length === 0)
+    return (
+      <EmptyState
+        icon={<GitBranch size={22} />}
+        title="No pipelines found"
+        description="Add GitHub Actions workflows to this repository to start tracking pipeline performance."
+      />
     )
 
   return (
@@ -345,6 +375,7 @@ function PipelinesTab({ repoId }: { repoId: string }) {
         <CardHeader
           title="7-Day Pass/Fail"
           subtitle={`${data.overallPassRate7d.toFixed(1)}% overall pass rate`}
+          action={<ExportButton onClick={() => exportPipelinesCsv(data.workflows)} />}
         />
         <CardContent>
           <PipelinePassRateChart summary={data} />
@@ -359,24 +390,24 @@ function PipelinesTab({ repoId }: { repoId: string }) {
 function SecurityTab({ repoId }: { repoId: string }) {
   const { data, isLoading, error, refetch } = useVulnerabilities(repoId)
 
-  if (isLoading)
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-32" />
-        <Skeleton className="h-64" />
-      </div>
-    )
+  if (isLoading) return <SecurityTabSkeleton />
 
   if (error || !data)
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="mb-3 text-sm text-slate-400">Failed to load security data</p>
-          <Button variant="secondary" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <ErrorState
+        title="Failed to load security data"
+        description="We couldn't fetch vulnerability information. Ensure Dependabot is enabled for this repository."
+        onRetry={() => refetch()}
+      />
+    )
+
+  if (data.vulnerabilities.length === 0)
+    return (
+      <EmptyState
+        icon={<Shield size={22} />}
+        title="No vulnerabilities found"
+        description="Great news! No security vulnerabilities were detected. Enable Dependabot alerts to keep monitoring."
+      />
     )
 
   return (
@@ -386,6 +417,7 @@ function SecurityTab({ repoId }: { repoId: string }) {
         <CardHeader
           title="Vulnerabilities"
           subtitle={`${data.openCount} open · ${data.total} total`}
+          action={<ExportButton onClick={() => exportVulnerabilitiesCsv(data.vulnerabilities)} />}
         />
         <CardContent>
           <VulnerabilityList vulnerabilities={data.vulnerabilities} />
@@ -397,34 +429,40 @@ function SecurityTab({ repoId }: { repoId: string }) {
 
 function LogsTab({ repoId }: { repoId: string }) {
   const { data, isLoading, error, refetch } = useLogs(repoId)
+  const [filteredEntries, setFilteredEntries] = useState(data?.entries ?? [])
+  const handleFilterChange = useCallback((entries: typeof filteredEntries) => {
+    setFilteredEntries(entries)
+  }, [])
 
-  if (isLoading)
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-48" />
-        <Skeleton className="h-64" />
-      </div>
-    )
+  if (isLoading) return <LogsTabSkeleton />
 
   if (error || !data)
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="mb-3 text-sm text-slate-400">Failed to load log data</p>
-          <Button variant="secondary" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <ErrorState
+        title="Failed to load log data"
+        description="We couldn't fetch log information. Check your cloud logging provider configuration."
+        onRetry={() => refetch()}
+      />
+    )
+
+  if (data.entries.length === 0 && data.totalErrors === 0)
+    return (
+      <EmptyState
+        icon={<FileText size={22} />}
+        title="No errors detected"
+        description="No errors found in the selected time range. Your services are running smoothly."
+        action={<LogFilters />}
+      />
     )
 
   return (
     <div className="space-y-6">
+      <LogFilters entries={data.entries} onFilterChange={handleFilterChange} />
+
       <Card>
         <CardHeader
           title="Error Rate"
           subtitle={`${data.totalErrors} errors, ${data.totalCritical} critical in last 24h`}
-          action={<LogFilters />}
         />
         <CardContent>
           <ErrorRateChart data={data.errorRateHistory} />
@@ -432,8 +470,15 @@ function LogsTab({ repoId }: { repoId: string }) {
       </Card>
 
       <Card>
-        <CardHeader title="Log Entries" subtitle={`Top services: ${data.topServices.map((s) => `${s.service} (${s.errorCount})`).join(', ')}`} />
-        <LogErrorFeed entries={data.entries} />
+        <CardHeader
+          title="Log Entries"
+          subtitle={filteredEntries.length !== data.entries.length
+            ? `Showing ${filteredEntries.length} of ${data.entries.length} entries`
+            : `Top services: ${data.topServices.map((s) => `${s.service} (${s.errorCount})`).join(', ')}`
+          }
+          action={<ExportButton onClick={() => exportLogsCsv(filteredEntries)} />}
+        />
+        <LogErrorFeed entries={filteredEntries} />
       </Card>
     </div>
   )
@@ -442,24 +487,24 @@ function LogsTab({ repoId }: { repoId: string }) {
 function CoverageTab({ repoId }: { repoId: string }) {
   const { data, isLoading, error, refetch } = useCoverage(repoId)
 
-  if (isLoading)
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-48" />
-        <Skeleton className="h-64" />
-      </div>
-    )
+  if (isLoading) return <CoverageTabSkeleton />
 
   if (error || !data)
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="mb-3 text-sm text-slate-400">Failed to load coverage data</p>
-          <Button variant="secondary" size="sm" onClick={() => refetch()}>
-            <RefreshCw size={13} /> Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <ErrorState
+        title="Failed to load coverage data"
+        description="We couldn't fetch code coverage information. Ensure a coverage provider (Codecov, GitHub Actions) is configured."
+        onRetry={() => refetch()}
+      />
+    )
+
+  if (data.files.length === 0)
+    return (
+      <EmptyState
+        icon={<BarChart2 size={22} />}
+        title="No coverage data available"
+        description="Set up code coverage reporting in your CI pipeline to start tracking test coverage."
+      />
     )
 
   return (
@@ -479,7 +524,11 @@ function CoverageTab({ repoId }: { repoId: string }) {
       </Card>
 
       <Card>
-        <CardHeader title="File Coverage" subtitle={`${data.files.length} files`} />
+        <CardHeader
+          title="File Coverage"
+          subtitle={`${data.files.length} files`}
+          action={<ExportButton onClick={() => exportCoverageCsv(data.files)} />}
+        />
         <CardContent>
           <CoverageFileTable files={data.files} threshold={data.threshold} />
         </CardContent>
@@ -490,57 +539,107 @@ function CoverageTab({ repoId }: { repoId: string }) {
 
 // ---- Main dashboard --------------------------------------------------------
 
+const OVERVIEW_CARDS: Record<TabId, React.FC<{ repoId: string }>> = {
+  costs: CostsOverviewCard,
+  pipelines: PipelinesOverviewCard,
+  security: SecurityOverviewCard,
+  logs: LogsOverviewCard,
+  coverage: CoverageOverviewCard,
+}
+
+const TAB_PANELS: Record<TabId, React.FC<{ repoId: string }>> = {
+  costs: CostsTab,
+  pipelines: PipelinesTab,
+  security: SecurityTab,
+  logs: LogsTab,
+  coverage: CoverageTab,
+}
+
 function RepoDashboard() {
   const { repoId } = useParams({ from: '/app/$repoId' })
-  const [activeTab, setActiveTab] = useState<TabId>('costs')
   const repositories = useRegistryStore((s) => s.repositories)
   const repo = repositories.find((r) => r.id === repoId)
+  const { getRepoPrefs, setDefaultTab, cardOrder } = usePreferencesStore()
+  const prefs = getRepoPrefs(repoId)
+  const [activeTab, setActiveTab] = useState<TabId>(prefs.defaultTab)
+
+  // Filter visible tabs
+  const visibleTabs = useMemo(
+    () => TABS.filter((t) => !prefs.hiddenTabs.includes(t.id)),
+    [prefs.hiddenTabs],
+  )
+
+  // Reorder overview cards based on preferences
+  const orderedCards = useMemo(
+    () => cardOrder.filter((id) => !prefs.hiddenTabs.includes(id)),
+    [cardOrder, prefs.hiddenTabs],
+  )
+
+  // Keyboard shortcuts: 1-5 for tab switching
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
+      const num = parseInt(e.key, 10)
+      if (num >= 1 && num <= visibleTabs.length) {
+        setActiveTab(visibleTabs[num - 1].id)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [visibleTabs])
 
   if (!repo) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-slate-400">Repository not found.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Repository not found.</p>
       </div>
     )
   }
+
+  const handleSetDefault = (tab: TabId) => {
+    setDefaultTab(repoId, tab)
+    setActiveTab(tab)
+  }
+
+  const ActivePanel = TAB_PANELS[activeTab]
 
   return (
     <div className="p-6 space-y-6">
       {/* Overview metrics row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <CostsOverviewCard repoId={repoId} />
-        <PipelinesOverviewCard repoId={repoId} />
-        <SecurityOverviewCard repoId={repoId} />
-        <LogsOverviewCard repoId={repoId} />
-        <CoverageOverviewCard repoId={repoId} />
+        {orderedCards.map((id) => {
+          const CardComponent = OVERVIEW_CARDS[id]
+          return <CardComponent key={id} repoId={repoId} />
+        })}
       </div>
 
       {/* Tabs */}
       <div>
-        <div className="flex gap-1 border-b border-slate-800">
-          {TABS.map((tab) => (
+        <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800">
+          {visibleTabs.map((tab, idx) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              onDoubleClick={() => handleSetDefault(tab.id)}
+              title={prefs.defaultTab === tab.id ? `${tab.label} (default) — press ${idx + 1}` : `${tab.label} — press ${idx + 1} · double-click to set as default`}
               className={cn(
                 'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
                 activeTab === tab.id
-                  ? 'border-sky-500 text-sky-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-200',
+                  ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',
               )}
             >
               {tab.icon}
               {tab.label}
+              {prefs.defaultTab === tab.id && (
+                <span className="ml-1 h-1 w-1 rounded-full bg-sky-500" />
+              )}
             </button>
           ))}
         </div>
 
         <div className="mt-6">
-          {activeTab === 'costs' && <CostsTab repoId={repoId} />}
-          {activeTab === 'pipelines' && <PipelinesTab repoId={repoId} />}
-          {activeTab === 'security' && <SecurityTab repoId={repoId} />}
-          {activeTab === 'logs' && <LogsTab repoId={repoId} />}
-          {activeTab === 'coverage' && <CoverageTab repoId={repoId} />}
+          <ActivePanel repoId={repoId} />
         </div>
       </div>
     </div>

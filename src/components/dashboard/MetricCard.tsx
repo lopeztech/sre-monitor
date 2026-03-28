@@ -18,10 +18,10 @@ interface MetricCardProps {
 }
 
 const statusBorder: Record<NonNullable<MetricCardProps['status']>, string> = {
-  healthy: 'border-green-800',
-  warning: 'border-amber-800',
-  critical: 'border-red-800',
-  unknown: 'border-slate-800',
+  healthy: 'border-green-300 dark:border-green-800',
+  warning: 'border-amber-300 dark:border-amber-800',
+  critical: 'border-red-300 dark:border-red-800',
+  unknown: 'border-slate-200 dark:border-slate-800',
 }
 
 export function MetricCard({
@@ -54,25 +54,25 @@ export function MetricCard({
     trend == null
       ? ''
       : trend.positive == null
-        ? 'text-slate-400'
+        ? 'text-slate-500 dark:text-slate-400'
         : trend.positive
-          ? 'text-green-400'
-          : 'text-red-400'
+          ? 'text-green-600 dark:text-green-400'
+          : 'text-red-600 dark:text-red-400'
 
   return (
     <Card className={cn(status && statusBorder[status])}>
       <CardContent className="pt-5">
         <div className="flex items-start gap-3">
           {icon && (
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               {icon}
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
               {title}
             </p>
-            <p className="mt-1 text-2xl font-bold text-slate-100">{value}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
             {subtitle && (
               <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
             )}
