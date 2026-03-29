@@ -5,7 +5,7 @@ import { useRegistryStore } from '@/store/registryStore'
 import { useUIStore } from '@/store/uiStore'
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to, ...props }: any) => <a href={to} {...props}>{children}</a>,
+  Link: ({ children, to, ...props }: Record<string, unknown>) => <a href={to as string} {...props}>{children as React.ReactNode}</a>,
   useParams: () => ({}),
 }))
 

@@ -10,7 +10,6 @@ export function AppShell() {
   // Try to get repoId from route params if available
   let repoId: string | undefined
   try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const params = useParams({ strict: false })
     repoId = (params as Record<string, string>).repoId
   } catch {

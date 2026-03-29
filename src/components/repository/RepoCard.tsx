@@ -31,7 +31,6 @@ const statusDot: Record<string, string> = {
 export function RepoCard({ repo, collapsed }: RepoCardProps) {
   let currentRepoId: string | undefined
   try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const params = useParams({ strict: false })
     currentRepoId = (params as Record<string, string>).repoId
   } catch {
