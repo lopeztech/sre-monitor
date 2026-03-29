@@ -1,0 +1,97 @@
+name: Deploy to GCS
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig*.json'
+      - 'tailwind.config.*'
+      - 'postcss.config.*'
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: sre-monitor-lcd
+  BUCKET_NAME: sre-monitor-lcd-sre-monitor-prod
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  deploy:
+    name: Build & Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to GCS
+        run: gsutil -m rsync -r -d dist/ gs://${{ env.BUCKET_NAME }}
+
+      - name: Set cache headers on hashed assets
+        run: |
+          gsutil -m setmeta \
+            -h "Cache-Control:public, max-age=31536000, immutable" \
+            "gs://${{ env.BUCKET_NAME }}/assets/**"
+
+      - name: Set cache headers on index.html
+        run: |
+          gsutil setmeta \
+            -h "Cache-Control:no-cache, no-store, must-revalidate" \
+            "gs://${{ env.BUCKET_NAME }}/index.html"
+
+      - name: Invalidate CDN cache
+        run: |
+          gcloud compute url-maps invalidate-cdn-cache \
+            sre-monitor-url-map-prod \
+            --path "/*" \
+            --project ${{ env.PROJECT_ID }} \
+            --async
+
+      - name: Summary
+        run: |
+          echo "### Deployed to GCS" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Bucket:** \`${{ env.BUCKET_NAME }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **URL:** [https://sre.lopezcloud.dev](https://sre.lopezcloud.dev)" >> "$GITHUB_STEP_SUMMARY"
