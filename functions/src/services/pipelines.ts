@@ -4,7 +4,7 @@ import type {
   PipelineRunStatus,
   PipelineSummary,
   PipelineWorkflow,
-} from '../../shared/types/pipeline.js'
+} from '../../../shared/types/pipeline.js'
 import { listWorkflows, listWorkflowRuns } from './github.js'
 
 // ── In-memory cache (60s TTL) ───────────────────────────────────────────────
@@ -137,7 +137,21 @@ export async function fetchPipelineSummary(
   const workflows: PipelineWorkflow[] = await Promise.all(
     ghWorkflows.map(async (wf) => {
       const ghRuns = await listWorkflowRuns(owner, repo, wf.id)
-      const runs = ghRuns.map(transformRun)
+      const runs = ghRuns.map((run) => transformRun({
+        id: run.id,
+        workflow_id: run.workflow_id,
+        name: run.name ?? null,
+        status: run.status ?? null,
+        conclusion: run.conclusion ?? null,
+        head_branch: run.head_branch,
+        head_sha: run.head_sha,
+        head_commit: run.head_commit ?? null,
+        actor: run.actor ?? null,
+        run_started_at: run.run_started_at ?? null,
+        created_at: run.created_at,
+        updated_at: run.updated_at,
+        html_url: run.html_url,
+      }))
 
       return {
         id: wf.id,

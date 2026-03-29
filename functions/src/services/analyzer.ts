@@ -2,7 +2,7 @@ import type {
   CloudProvider,
   RegisteredRepository,
   RepositoryAnalysis,
-} from '../../shared/types/repository.js'
+} from '../../../shared/types/repository.js'
 import { getRepo, getTree, getFileContent } from './github.js'
 
 export interface TreeEntry {

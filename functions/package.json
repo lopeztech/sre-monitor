@@ -2,10 +2,10 @@
   "name": "sre-monitor-api",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/functions/src/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "npx functions-framework --target=api --source=dist",
+    "start": "npx functions-framework --target=api --source=dist/functions/src",
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest"

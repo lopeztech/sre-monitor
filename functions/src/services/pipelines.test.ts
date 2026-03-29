@@ -6,7 +6,7 @@ import {
   calculatePassRate,
   calculateAvgDuration,
 } from './pipelines.js'
-import type { PipelineRun } from '../../shared/types/pipeline.js'
+import type { PipelineRun } from '../../../shared/types/pipeline.js'
 
 describe('mapStatus', () => {
   it('maps completed + success to success', () => {
