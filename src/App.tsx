@@ -7,6 +7,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { useEffect } from 'react'
 import { useRegistryStore } from '@/store/registryStore'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { GitHubAuthProvider } from '@/contexts/GitHubAuthContext'
 import '@/store/themeStore'
 
 // Import routes
@@ -15,6 +16,7 @@ import { Route as indexRoute } from './routes/index'
 import { Route as registerRoute } from './routes/register'
 import { Route as repoRoute } from './routes/app/$repoId'
 import { Route as repoSettingsRoute } from './routes/app/$repoId.settings'
+import { Route as githubCallbackRoute } from './routes/auth/github/callback'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +32,7 @@ const routeTree = rootRoute.addChildren([
   registerRoute,
   repoRoute,
   repoSettingsRoute,
+  githubCallbackRoute,
 ])
 
 const router = createRouter({ routeTree })
@@ -54,9 +57,11 @@ export default function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''}>
       <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <AppInner />
-        </QueryClientProvider>
+        <GitHubAuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <AppInner />
+          </QueryClientProvider>
+        </GitHubAuthProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   )

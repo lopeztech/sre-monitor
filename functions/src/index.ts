@@ -1,19 +1,24 @@
 import { http } from '@google-cloud/functions-framework'
 import { fetchPipelineSummary } from './services/pipelines.js'
 import { analyzeRepository } from './services/analyzer.js'
+import { createSessionJwt, verifySessionJwt } from './services/auth.js'
+import type { GitHubUser } from '../../shared/types/auth.js'
 
 const ALLOWED_ORIGINS = [
   'https://sre.lopezcloud.dev',
   'http://localhost:5173',
 ]
 
-function setCors(req: Parameters<Parameters<typeof http>[1]>[0], res: Parameters<Parameters<typeof http>[1]>[1]) {
+type Req = Parameters<Parameters<typeof http>[1]>[0]
+type Res = Parameters<Parameters<typeof http>[1]>[1]
+
+function setCors(req: Req, res: Res) {
   const origin = req.headers.origin
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.set('Access-Control-Allow-Origin', origin)
   }
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.set('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With')
+  res.set('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Authorization')
   res.set('Access-Control-Max-Age', '3600')
 }
 
@@ -21,6 +26,16 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/)
   if (!match) return null
   return { owner: match[1], repo: match[2] }
+}
+
+function extractAuth(req: Req): { githubToken: string; ghUser: GitHubUser } | null {
+  const header = req.headers.authorization
+  if (!header?.startsWith('Bearer ')) return null
+  try {
+    return verifySessionJwt(header.slice(7))
+  } catch {
+    return null
+  }
 }
 
 http('api', async (req, res) => {
@@ -32,10 +47,68 @@ http('api', async (req, res) => {
   }
 
   const path = req.path
+  const auth = extractAuth(req)
 
   // ── POST routes ─────────────────────────────────────────────────────────
 
   if (req.method === 'POST') {
+    // POST /api/auth/github/callback
+    if (path === '/api/auth/github/callback') {
+      const body = req.body as { code?: string } | undefined
+      const code = body?.code
+
+      if (!code || typeof code !== 'string') {
+        res.status(400).json({ error: 'Missing required field: code' })
+        return
+      }
+
+      try {
+        // Exchange code for access token
+        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: process.env.GITHUB_OAUTH_CLIENT_ID,
+            client_secret: process.env.GITHUB_OAUTH_CLIENT_SECRET,
+            code,
+          }),
+        })
+
+        const tokenData = await tokenResponse.json() as { access_token?: string; error?: string; error_description?: string }
+        if (tokenData.error || !tokenData.access_token) {
+          res.status(400).json({ error: tokenData.error_description ?? 'Failed to exchange code for token' })
+          return
+        }
+
+        // Fetch GitHub user profile
+        const userResponse = await fetch('https://api.github.com/user', {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        })
+
+        if (!userResponse.ok) {
+          res.status(500).json({ error: 'Failed to fetch GitHub user profile' })
+          return
+        }
+
+        const userData = await userResponse.json() as { login: string; id: number; avatar_url: string }
+        const ghUser: GitHubUser = {
+          login: userData.login,
+          id: userData.id,
+          avatar_url: userData.avatar_url,
+        }
+
+        const jwt = createSessionJwt(tokenData.access_token, ghUser)
+        res.json({ jwt, user: ghUser })
+      } catch (err) {
+        console.error('GitHub OAuth callback error:', err)
+        res.status(500).json({ error: 'OAuth token exchange failed' })
+      }
+      return
+    }
+
     // POST /api/repos/analyze
     if (path === '/api/repos/analyze') {
       const body = req.body as { githubUrl?: string } | undefined
@@ -53,7 +126,7 @@ http('api', async (req, res) => {
       }
 
       try {
-        const result = await analyzeRepository(parsed.owner, parsed.repo, githubUrl)
+        const result = await analyzeRepository(parsed.owner, parsed.repo, githubUrl, auth?.githubToken)
         res.json(result)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Internal server error'
@@ -81,6 +154,16 @@ http('api', async (req, res) => {
     return
   }
 
+  // GET /api/auth/github/verify
+  if (path === '/api/auth/github/verify') {
+    if (!auth) {
+      res.status(401).json({ error: 'Invalid or missing token' })
+      return
+    }
+    res.json({ valid: true, user: auth.ghUser })
+    return
+  }
+
   // GET /api/repos/:repoId/pipelines?owner=X&repo=Y
   const pipelinesMatch = path.match(/^\/api\/repos\/([^/]+)\/pipelines$/)
   if (pipelinesMatch) {
@@ -94,7 +177,11 @@ http('api', async (req, res) => {
     }
 
     try {
-      const summary = await fetchPipelineSummary(repoId, owner, repo)
+      const summary = await fetchPipelineSummary(
+        repoId, owner, repo,
+        auth?.githubToken,
+        auth?.ghUser.id.toString(),
+      )
       res.json(summary)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error'

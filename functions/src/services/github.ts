@@ -1,16 +1,16 @@
 import { Octokit } from '@octokit/rest'
 
-const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN,
-})
+function createOctokit(token?: string): Octokit {
+  return new Octokit({ auth: token ?? process.env.GITHUB_TOKEN })
+}
 
-export async function getRepo(owner: string, repo: string) {
-  const response = await octokit.repos.get({ owner, repo })
+export async function getRepo(owner: string, repo: string, token?: string) {
+  const response = await createOctokit(token).repos.get({ owner, repo })
   return response.data
 }
 
-export async function getTree(owner: string, repo: string, treeSha: string) {
-  const response = await octokit.git.getTree({
+export async function getTree(owner: string, repo: string, treeSha: string, token?: string) {
+  const response = await createOctokit(token).git.getTree({
     owner,
     repo,
     tree_sha: treeSha,
@@ -19,9 +19,9 @@ export async function getTree(owner: string, repo: string, treeSha: string) {
   return response.data
 }
 
-export async function getFileContent(owner: string, repo: string, path: string): Promise<string | null> {
+export async function getFileContent(owner: string, repo: string, path: string, token?: string): Promise<string | null> {
   try {
-    const response = await octokit.repos.getContent({ owner, repo, path })
+    const response = await createOctokit(token).repos.getContent({ owner, repo, path })
     const data = response.data
     if ('content' in data && data.encoding === 'base64') {
       return Buffer.from(data.content, 'base64').toString('utf-8')
@@ -32,8 +32,8 @@ export async function getFileContent(owner: string, repo: string, path: string):
   }
 }
 
-export async function listWorkflows(owner: string, repo: string) {
-  const response = await octokit.actions.listRepoWorkflows({
+export async function listWorkflows(owner: string, repo: string, token?: string) {
+  const response = await createOctokit(token).actions.listRepoWorkflows({
     owner,
     repo,
     per_page: 100,
@@ -46,11 +46,12 @@ export async function listWorkflowRuns(
   repo: string,
   workflowId: number,
   options: { per_page?: number; page?: number } = {},
+  token?: string,
 ) {
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-  const response = await octokit.actions.listWorkflowRuns({
+  const response = await createOctokit(token).actions.listWorkflowRuns({
     owner,
     repo,
     workflow_id: workflowId,

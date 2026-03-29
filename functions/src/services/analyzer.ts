@@ -175,14 +175,15 @@ export async function analyzeRepository(
   owner: string,
   repo: string,
   githubUrl: string,
+  githubToken?: string,
 ): Promise<RegisteredRepository> {
   // 1. Validate repo and get metadata
-  const repoData = await getRepo(owner, repo)
+  const repoData = await getRepo(owner, repo, githubToken)
   const defaultBranch = repoData.default_branch
   const treeSha = repoData.default_branch
 
   // 2. Get full file tree
-  const treeData = await getTree(owner, repo, treeSha)
+  const treeData = await getTree(owner, repo, treeSha, githubToken)
   if (treeData.truncated) {
     console.warn(`Tree truncated for ${owner}/${repo} — analysis may be incomplete`)
   }
@@ -192,7 +193,7 @@ export async function analyzeRepository(
   const hasPackageJson = tree.some((e) => e.path === 'package.json')
   let packageJson: PackageJson | null = null
   if (hasPackageJson) {
-    const content = await getFileContent(owner, repo, 'package.json')
+    const content = await getFileContent(owner, repo, 'package.json', githubToken)
     if (content) {
       try {
         packageJson = JSON.parse(content)
@@ -207,7 +208,7 @@ export async function analyzeRepository(
   if (firstTfFile) {
     // Try to read main.tf first, fall back to first .tf file
     const mainTf = tree.find((e) => e.path.endsWith('main.tf'))
-    tfContent = await getFileContent(owner, repo, mainTf?.path ?? firstTfFile.path)
+    tfContent = await getFileContent(owner, repo, mainTf?.path ?? firstTfFile.path, githubToken)
   }
 
   // 4. Run detectors

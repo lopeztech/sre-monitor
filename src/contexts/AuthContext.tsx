@@ -123,6 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   function logout() {
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem('sre_monitor_github_jwt')
+    localStorage.removeItem('sre_monitor_github_user')
     setUser(null)
   }
 

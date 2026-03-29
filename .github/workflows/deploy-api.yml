@@ -84,7 +84,7 @@ jobs:
             --trigger-http \
             --entry-point=api \
             --source=functions \
-            --set-secrets=GITHUB_TOKEN=github-token:latest \
+            --set-secrets=GITHUB_TOKEN=github-token:latest,GITHUB_OAUTH_CLIENT_ID=github-oauth-client-id:latest,GITHUB_OAUTH_CLIENT_SECRET=github-oauth-client-secret:latest,JWT_SECRET=jwt-secret:latest \
             --memory=256Mi \
             --timeout=60s \
             --min-instances=0 \

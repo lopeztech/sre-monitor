@@ -9,11 +9,20 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'SREMonitor',
+  }
+
+  const jwt = localStorage.getItem('sre_monitor_github_jwt')
+  if (jwt) {
+    headers['Authorization'] = `Bearer ${jwt}`
+  }
+
   const response = await fetch(url, {
     headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'SREMonitor',
-      ...options?.headers,
+      ...headers,
+      ...(options?.headers as Record<string, string>),
     },
     ...options,
   })

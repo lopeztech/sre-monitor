@@ -125,18 +125,20 @@ export async function fetchPipelineSummary(
   repoId: string,
   owner: string,
   repo: string,
+  githubToken?: string,
+  userId?: string,
 ): Promise<PipelineSummary> {
-  const cacheKey = `${owner}/${repo}`
+  const cacheKey = `${owner}/${repo}:${userId ?? 'shared'}`
   const cached = cache.get(cacheKey)
   if (cached && Date.now() < cached.expiresAt) {
     return { ...cached.data, repoId }
   }
 
-  const ghWorkflows = await listWorkflows(owner, repo)
+  const ghWorkflows = await listWorkflows(owner, repo, githubToken)
 
   const workflows: PipelineWorkflow[] = await Promise.all(
     ghWorkflows.map(async (wf) => {
-      const ghRuns = await listWorkflowRuns(owner, repo, wf.id)
+      const ghRuns = await listWorkflowRuns(owner, repo, wf.id, {}, githubToken)
       const runs = ghRuns.map((run) => transformRun({
         id: run.id,
         workflow_id: run.workflow_id,

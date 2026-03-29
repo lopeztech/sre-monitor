@@ -5,13 +5,14 @@ import { z } from 'zod'
 import { useNavigate } from '@tanstack/react-router'
 import { parseGitHubUrl } from '@/lib/github'
 import { useRegistryStore } from '@/store/registryStore'
+import { useGitHubAuth } from '@/contexts/GitHubAuthContext'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { apiFetch } from '@/api/client'
 import type { RegisteredRepository } from '@/types/repository'
-import { CheckCircle2, Server, GitBranch, Shield, BarChart2, FileCode2, ArrowLeft } from 'lucide-react'
+import { CheckCircle2, Server, GitBranch, Shield, BarChart2, FileCode2, ArrowLeft, Github, Info } from 'lucide-react'
 
 const schema = z.object({
   githubUrl: z
@@ -35,6 +36,7 @@ const providerLabel: Record<string, string> = {
 export function RegisterForm() {
   const addRepository = useRegistryStore((s) => s.addRepository)
   const navigate = useNavigate()
+  const { isGitHubConnected, connectGitHub } = useGitHubAuth()
   const [analyzedRepo, setAnalyzedRepo] = useState<RegisteredRepository | null>(null)
 
   const {
@@ -56,10 +58,17 @@ export function RegisterForm() {
         body: JSON.stringify({ githubUrl: data.githubUrl }),
       })
       setAnalyzedRepo(repo)
-    } catch {
-      setError('githubUrl', {
-        message: 'Failed to analyze repository. Please try again.',
-      })
+    } catch (err) {
+      const status = err instanceof Error && 'status' in err ? (err as { status: number }).status : 0
+      if ((status === 404 || status === 403) && !isGitHubConnected) {
+        setError('githubUrl', {
+          message: 'Repository not found. It may be private — connect your GitHub account to access it.',
+        })
+      } else {
+        setError('githubUrl', {
+          message: 'Failed to analyze repository. Please try again.',
+        })
+      }
     }
   }
 
@@ -183,6 +192,18 @@ export function RegisterForm() {
         subtitle="Add a GitHub repository to start monitoring it"
       />
       <CardContent>
+        {!isGitHubConnected && (
+          <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-700 dark:border-sky-800/50 dark:bg-sky-950/30 dark:text-sky-300">
+            <Info size={14} className="mt-0.5 flex-shrink-0" />
+            <div>
+              <span>Connect your GitHub account to access private repositories. </span>
+              <button onClick={connectGitHub} className="inline-flex items-center gap-1 font-medium underline underline-offset-2 hover:text-sky-900 dark:hover:text-sky-100">
+                <Github size={12} />
+                Connect GitHub
+              </button>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit(onAnalyze)} className="space-y-5">
           <Input
             label="GitHub Repository URL"
