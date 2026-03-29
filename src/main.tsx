@@ -4,8 +4,10 @@ import App from './App'
 import './index.css'
 
 async function prepare() {
-  const { worker } = await import('./mocks/browser')
-  return worker.start({ onUnhandledRequest: 'bypass' })
+  if (import.meta.env.VITE_USE_MOCKS === 'true') {
+    const { worker } = await import('./mocks/browser')
+    return worker.start({ onUnhandledRequest: 'bypass' })
+  }
 }
 
 prepare().then(() => {
