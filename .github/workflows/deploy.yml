@@ -85,7 +85,11 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      - name: Build
+        run: npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
 
       - name: Authenticate to Google Cloud (WIF)
         uses: google-github-actions/auth@v2

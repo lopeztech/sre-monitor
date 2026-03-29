@@ -2,8 +2,7 @@
  * UI Smoke Tests
  *
  * Verify that core pages and components render without crashing.
- * These are intentionally lightweight — they check that key elements
- * appear on screen, not detailed behaviour.
+ * Lightweight checks — key elements appear on screen.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -13,11 +12,7 @@ import { useRegistryStore } from '@/store/registryStore'
 import { useUIStore } from '@/store/uiStore'
 import { repositoryFixtures } from '@/mocks/fixtures/repositories'
 
-// ── Shared mocks ────────────────────────────────────────────────────────────
-
-const mockLogout = vi.fn()
-const mockLoginAsGuest = vi.fn()
-const mockLogin = vi.fn()
+// ── Mocks ───────────────────────────────────────────────────────────────────
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
@@ -25,9 +20,9 @@ vi.mock('@/contexts/AuthContext', () => ({
     isAuthenticated: true,
     isGuest: false,
     isLoading: false,
-    login: mockLogin,
-    loginAsGuest: mockLoginAsGuest,
-    logout: mockLogout,
+    login: vi.fn(),
+    loginAsGuest: vi.fn(),
+    logout: vi.fn(),
   }),
 }))
 
@@ -49,9 +44,10 @@ vi.mock('@/components/ui/theme-toggle', () => ({
 }))
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to, ...props }: { children: React.ReactNode; to: string; [k: string]: unknown }) => (
-    <a href={to} {...props}>{children}</a>
-  ),
+  Link: ({ children, ...props }: { children: React.ReactNode; [k: string]: unknown }) => {
+    const { to, params: _params, ...rest } = props as { to?: string; params?: unknown; [k: string]: unknown }
+    return <a href={typeof to === 'string' ? to : '#'} {...rest}>{children}</a>
+  },
   useParams: () => ({ repoId: 'repo-frontend' }),
   useNavigate: () => vi.fn(),
   Navigate: () => null,
@@ -69,8 +65,6 @@ function createWrapper() {
   )
 }
 
-// ── Setup ───────────────────────────────────────────────────────────────────
-
 beforeEach(() => {
   vi.clearAllMocks()
   useRegistryStore.setState({ repositories: repositoryFixtures })
@@ -80,9 +74,7 @@ beforeEach(() => {
 // ── Login Page ──────────────────────────────────────────────────────────────
 
 describe('Smoke: LoginPage', () => {
-  // Need to re-mock useAuth as unauthenticated for login page tests
-  it('renders guest login button and branding', async () => {
-    // Import dynamically to get fresh module
+  it('renders branding and guest button', async () => {
     const { default: LoginPage } = await import('@/pages/LoginPage')
     render(<LoginPage />)
 
@@ -129,12 +121,11 @@ describe('Smoke: Sidebar', () => {
     expect(screen.getByText('Add Repository')).toBeInTheDocument()
   })
 
-  it('renders collapsed state', async () => {
+  it('hides title when collapsed', async () => {
     useUIStore.setState({ sidebarCollapsed: true })
     const { Sidebar } = await import('@/components/layout/Sidebar')
     render(<Sidebar />)
 
-    // Title should be hidden when collapsed
     expect(screen.queryByText('SRE Monitor')).not.toBeInTheDocument()
   })
 })
@@ -151,7 +142,7 @@ describe('Smoke: RegisterForm', () => {
     expect(screen.getByRole('button', { name: /Analyze Repository/i })).toBeInTheDocument()
   })
 
-  it('shows GitHub connection banner when not connected', async () => {
+  it('shows GitHub connection banner', async () => {
     const { RegisterForm } = await import('@/components/repository/RegisterForm')
     render(<RegisterForm />, { wrapper: createWrapper() })
 
@@ -183,60 +174,51 @@ describe('Smoke: RegisterForm', () => {
   })
 })
 
-// ── Dashboard Overview Cards ────────────────────────────────────────────────
+// ── Data Hooks (dashboard data loads) ───────────────────────────────────────
 
-describe('Smoke: Dashboard Overview Cards', () => {
-  it('renders cost overview card', async () => {
-    const mod = await import('@/routes/app/$repoId')
-    // The route file exports internal components; find CostsOverviewCard via the module
-    // Since components aren't directly exported, test via the hook
+describe('Smoke: Dashboard Data Hooks', () => {
+  it('fetches cost data', async () => {
     const { useCosts } = await import('@/hooks/useCosts')
     const { renderHook } = await import('@testing-library/react')
-
     const { result } = renderHook(() => useCosts('repo-frontend'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 5000 })
-    expect(result.current.data).toBeDefined()
     expect(result.current.data!.totalCost).toBeGreaterThan(0)
   })
 
-  it('renders pipeline data', async () => {
+  it('fetches pipeline data', async () => {
     const { usePipelines } = await import('@/hooks/usePipelines')
     const { renderHook } = await import('@testing-library/react')
-
     const { result } = renderHook(() => usePipelines('repo-frontend'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 5000 })
     expect(result.current.data!.workflows.length).toBeGreaterThan(0)
   })
 
-  it('renders vulnerability data', async () => {
+  it('fetches vulnerability data', async () => {
     const { useVulnerabilities } = await import('@/hooks/useVulnerabilities')
     const { renderHook } = await import('@testing-library/react')
-
     const { result } = renderHook(() => useVulnerabilities('repo-frontend'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 5000 })
     expect(result.current.data).toBeDefined()
   })
 
-  it('renders log data', async () => {
+  it('fetches log data', async () => {
     const { useLogs } = await import('@/hooks/useLogs')
     const { renderHook } = await import('@testing-library/react')
-
     const { result } = renderHook(() => useLogs('repo-frontend'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 5000 })
     expect(result.current.data).toBeDefined()
   })
 
-  it('renders coverage data', async () => {
+  it('fetches coverage data', async () => {
     const { useCoverage } = await import('@/hooks/useCoverage')
     const { renderHook } = await import('@testing-library/react')
-
     const { result } = renderHook(() => useCoverage('repo-frontend'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 5000 })
     expect(result.current.data).toBeDefined()
   })
 })
 
-// ── Pipeline Components ─────────────────────────────────────────────────────
+// ── Component Rendering ─────────────────────────────────────────────────────
 
 describe('Smoke: Pipeline Components', () => {
   it('renders PipelineList with workflows', async () => {
@@ -245,14 +227,11 @@ describe('Smoke: Pipeline Components', () => {
     const data = pipelinesFixtures['repo-frontend']
 
     render(<PipelineList workflows={data.workflows} />)
-
     for (const wf of data.workflows) {
       expect(screen.getByText(wf.name)).toBeInTheDocument()
     }
   })
 })
-
-// ── Cost Components ─────────────────────────────────────────────────────────
 
 describe('Smoke: Cost Components', () => {
   it('renders CostByServiceTable', async () => {
@@ -261,12 +240,9 @@ describe('Smoke: Cost Components', () => {
     const data = costsFixtures['repo-frontend']
 
     render(<CostByServiceTable services={data.byService} />)
-
     expect(screen.getByText('Service')).toBeInTheDocument()
   })
 })
-
-// ── Security Components ─────────────────────────────────────────────────────
 
 describe('Smoke: Security Components', () => {
   it('renders VulnerabilityList', async () => {
@@ -275,7 +251,6 @@ describe('Smoke: Security Components', () => {
     const data = vulnerabilitiesFixtures['repo-frontend']
 
     render(<VulnerabilityList vulnerabilities={data.vulnerabilities} />)
-
     expect(screen.getByText(data.vulnerabilities[0].packageName)).toBeInTheDocument()
   })
 })
