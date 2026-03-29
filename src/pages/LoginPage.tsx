@@ -30,7 +30,7 @@ export default function LoginPage() {
         <div className="w-full bg-white border border-slate-200 rounded-2xl p-8 flex flex-col items-center gap-5 shadow-xl dark:bg-slate-900 dark:border-slate-800">
           <p className="text-slate-500 text-sm text-center dark:text-slate-400">Sign in to access your dashboard</p>
 
-          {CLIENT_ID ? (
+          {CLIENT_ID && (
             <GoogleLogin
               onSuccess={login}
               onError={() => console.error('Google Sign-In failed')}
@@ -40,14 +40,6 @@ export default function LoginPage() {
               text="signin_with"
               width="280"
             />
-          ) : (
-            <div className="text-center p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs leading-relaxed dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-300">
-              <p className="font-semibold mb-1">Configuration required</p>
-              <p>
-                Set <code className="font-mono bg-amber-100 px-1 py-0.5 rounded dark:bg-amber-900/50">VITE_GOOGLE_CLIENT_ID</code> in
-                your <code className="font-mono bg-amber-100 px-1 py-0.5 rounded dark:bg-amber-900/50">.env.local</code> file.
-              </p>
-            </div>
           )}
 
           <div className="w-full flex items-center gap-3">
