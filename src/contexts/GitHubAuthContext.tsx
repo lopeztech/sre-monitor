@@ -124,7 +124,7 @@ export function useGitHubAuth() {
   return ctx
 }
 
-/** Get the stored return URL after OAuth callback and clear it */
+// eslint-disable-next-line react-refresh/only-export-components
 export function getOAuthReturnUrl(): string {
   const url = sessionStorage.getItem(RETURN_URL_KEY) ?? '/'
   sessionStorage.removeItem(RETURN_URL_KEY)
