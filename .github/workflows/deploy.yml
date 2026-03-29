@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'src/**'
+      - 'shared/**'
       - 'public/**'
       - 'index.html'
       - 'package.json'
@@ -24,8 +25,8 @@ permissions:
   id-token: write
 
 jobs:
-  test:
-    name: Test
+  test-frontend:
+    name: Test Frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,9 +40,24 @@ jobs:
       - run: npm run lint
       - run: npm test
 
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - run: cd functions && npm ci
+      - run: cd functions && npm test
+
   deploy:
     name: Build & Deploy
-    needs: test
+    needs: [test-frontend, test-backend]
     runs-on: ubuntu-latest
     environment: prod
 

@@ -18,8 +18,8 @@ permissions:
   id-token: write
 
 jobs:
-  test:
-    name: Test
+  test-backend:
+    name: Test Backend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,9 +33,23 @@ jobs:
       - run: cd functions && npm ci
       - run: cd functions && npm test
 
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
   deploy:
     name: Deploy
-    needs: test
+    needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
     environment: prod
 
