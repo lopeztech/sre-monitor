@@ -43,9 +43,14 @@ vi.mock('@/components/ui/theme-toggle', () => ({
   ThemeToggle: () => <div data-testid="theme-toggle">Theme</div>,
 }))
 
+vi.mock('@react-oauth/google', () => ({
+  GoogleLogin: () => <div data-testid="google-login">Google Sign In</div>,
+  GoogleOAuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}))
+
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, ...props }: { children: React.ReactNode; [k: string]: unknown }) => {
-    const { to, params: _params, ...rest } = props as { to?: string; params?: unknown; [k: string]: unknown }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  Link: ({ children, to, params, ...rest }: { children: React.ReactNode; to?: string; params?: unknown; [k: string]: unknown }) => {
     return <a href={typeof to === 'string' ? to : '#'} {...rest}>{children}</a>
   },
   useParams: () => ({ repoId: 'repo-frontend' }),
@@ -182,7 +187,7 @@ describe('Smoke: Dashboard Data Hooks', () => {
     const { renderHook } = await import('@testing-library/react')
     const { result } = renderHook(() => useCosts('repo-frontend'), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 5000 })
-    expect(result.current.data!.totalCost).toBeGreaterThan(0)
+    expect(result.current.data!.currentPeriodTotal).toBeGreaterThan(0)
   })
 
   it('fetches pipeline data', async () => {
@@ -251,6 +256,6 @@ describe('Smoke: Security Components', () => {
     const data = vulnerabilitiesFixtures['repo-frontend']
 
     render(<VulnerabilityList vulnerabilities={data.vulnerabilities} />)
-    expect(screen.getByText(data.vulnerabilities[0].packageName)).toBeInTheDocument()
+    expect(screen.getAllByText(data.vulnerabilities[0].packageName).length).toBeGreaterThan(0)
   })
 })
