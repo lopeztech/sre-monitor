@@ -4,6 +4,16 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RegisterForm } from './RegisterForm'
 
+vi.mock('@/contexts/GitHubAuthContext', () => ({
+  useGitHubAuth: () => ({
+    githubUser: null,
+    isGitHubConnected: false,
+    isConnecting: false,
+    connectGitHub: vi.fn(),
+    disconnectGitHub: vi.fn(),
+  }),
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,

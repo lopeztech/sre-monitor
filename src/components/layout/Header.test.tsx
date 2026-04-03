@@ -13,6 +13,17 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }))
 
+// Mock GitHubAuthContext
+vi.mock('@/contexts/GitHubAuthContext', () => ({
+  useGitHubAuth: () => ({
+    githubUser: null,
+    isGitHubConnected: false,
+    isConnecting: false,
+    connectGitHub: vi.fn(),
+    disconnectGitHub: vi.fn(),
+  }),
+}))
+
 // Mock ThemeToggle to avoid store issues
 vi.mock('@/components/ui/theme-toggle', () => ({
   ThemeToggle: () => <div data-testid="theme-toggle">Theme</div>,
