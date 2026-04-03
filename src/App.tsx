@@ -4,9 +4,9 @@ import {
   RouterProvider,
 } from '@tanstack/react-router'
 import { GoogleOAuthProvider } from '@react-oauth/google'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRegistryStore } from '@/store/registryStore'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { GitHubAuthProvider } from '@/contexts/GitHubAuthContext'
 import '@/store/themeStore'
 
@@ -44,11 +44,25 @@ declare module '@tanstack/react-router' {
 }
 
 function AppInner() {
+  const { isGuest } = useAuth()
   const seedDemoRepos = useRegistryStore((s) => s.seedDemoRepos)
+  const workerRef = useRef<{ stop: () => void } | null>(null)
 
   useEffect(() => {
-    seedDemoRepos()
-  }, [seedDemoRepos])
+    if (isGuest) {
+      seedDemoRepos()
+
+      if (import.meta.env.VITE_USE_MOCKS === 'true') {
+        import('./mocks/browser').then(({ worker }) => {
+          worker.start({ onUnhandledRequest: 'bypass' })
+          workerRef.current = worker
+        })
+      }
+    } else if (workerRef.current) {
+      workerRef.current.stop()
+      workerRef.current = null
+    }
+  }, [isGuest, seedDemoRepos])
 
   return <RouterProvider router={router} />
 }
