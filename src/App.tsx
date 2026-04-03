@@ -4,7 +4,7 @@ import {
   RouterProvider,
 } from '@tanstack/react-router'
 import { GoogleOAuthProvider } from '@react-oauth/google'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRegistryStore } from '@/store/registryStore'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { GitHubAuthProvider } from '@/contexts/GitHubAuthContext'
@@ -47,22 +47,31 @@ function AppInner() {
   const { isGuest } = useAuth()
   const seedDemoRepos = useRegistryStore((s) => s.seedDemoRepos)
   const workerRef = useRef<{ stop: () => void } | null>(null)
+  const [mockReady, setMockReady] = useState(!isGuest)
 
   useEffect(() => {
     if (isGuest) {
       seedDemoRepos()
 
       if (import.meta.env.VITE_USE_MOCKS === 'true') {
+        setMockReady(false)
         import('./mocks/browser').then(({ worker }) => {
-          worker.start({ onUnhandledRequest: 'bypass' })
-          workerRef.current = worker
+          worker.start({ onUnhandledRequest: 'bypass' }).then(() => {
+            workerRef.current = worker
+            setMockReady(true)
+          })
         })
       }
-    } else if (workerRef.current) {
-      workerRef.current.stop()
-      workerRef.current = null
+    } else {
+      if (workerRef.current) {
+        workerRef.current.stop()
+        workerRef.current = null
+      }
+      setMockReady(true)
     }
   }, [isGuest, seedDemoRepos])
+
+  if (!mockReady) return null
 
   return <RouterProvider router={router} />
 }
