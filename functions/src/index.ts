@@ -166,6 +166,67 @@ http('api', async (req, res) => {
     return
   }
 
+  // GET /api/github/repos — list authenticated user's GitHub repositories
+  if (path === '/api/github/repos') {
+    if (!auth) {
+      res.status(401).json({ error: 'GitHub authentication required' })
+      return
+    }
+
+    try {
+      const page = parseInt(req.query.page as string) || 1
+      const perPage = Math.min(parseInt(req.query.per_page as string) || 30, 100)
+
+      const ghResponse = await fetch(
+        `https://api.github.com/user/repos?sort=updated&direction=desc&per_page=${perPage}&page=${page}&type=all`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.githubToken}`,
+            Accept: 'application/vnd.github+json',
+          },
+        },
+      )
+
+      if (!ghResponse.ok) {
+        res.status(ghResponse.status).json({ error: 'Failed to fetch repositories from GitHub' })
+        return
+      }
+
+      const repos = (await ghResponse.json()) as Array<{
+        id: number
+        full_name: string
+        name: string
+        owner: { login: string; avatar_url: string }
+        html_url: string
+        description: string | null
+        private: boolean
+        default_branch: string
+        language: string | null
+        updated_at: string
+      }>
+
+      res.json(
+        repos.map((r) => ({
+          id: r.id,
+          fullName: r.full_name,
+          name: r.name,
+          owner: r.owner.login,
+          ownerAvatar: r.owner.avatar_url,
+          htmlUrl: r.html_url,
+          description: r.description,
+          isPrivate: r.private,
+          defaultBranch: r.default_branch,
+          language: r.language,
+          updatedAt: r.updated_at,
+        })),
+      )
+    } catch (err) {
+      console.error('Error fetching GitHub repos:', err)
+      res.status(500).json({ error: 'Failed to fetch repositories' })
+    }
+    return
+  }
+
   // GET /api/repos/:repoId/pipelines?owner=X&repo=Y
   const pipelinesMatch = path.match(/^\/api\/repos\/([^/]+)\/pipelines$/)
   if (pipelinesMatch) {

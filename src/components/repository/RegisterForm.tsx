@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { apiFetch } from '@/api/client'
 import type { RegisteredRepository } from '@/types/repository'
-import { CheckCircle2, Server, GitBranch, Shield, BarChart2, FileCode2, ArrowLeft, Info } from 'lucide-react'
+import { CheckCircle2, Server, GitBranch, Shield, BarChart2, FileCode2, ArrowLeft, Info, Lock, Search, Loader2 } from 'lucide-react'
 
 function GithubIcon({ size = 24 }: { size?: number }) {
   return (
@@ -21,6 +21,20 @@ function GithubIcon({ size = 24 }: { size?: number }) {
       <path d="M9 18c-4.51 2-5-2-7-2" />
     </svg>
   )
+}
+
+interface GitHubRepo {
+  id: number
+  fullName: string
+  name: string
+  owner: string
+  ownerAvatar: string
+  htmlUrl: string
+  description: string | null
+  isPrivate: boolean
+  defaultBranch: string
+  language: string | null
+  updatedAt: string
 }
 
 const schema = z.object({
@@ -42,11 +56,28 @@ const providerLabel: Record<string, string> = {
   unknown: 'Not detected',
 }
 
+const languageColor: Record<string, string> = {
+  TypeScript: 'bg-blue-500',
+  JavaScript: 'bg-yellow-400',
+  Python: 'bg-green-500',
+  Go: 'bg-cyan-500',
+  Rust: 'bg-orange-600',
+  Java: 'bg-red-500',
+  Ruby: 'bg-red-600',
+  Shell: 'bg-emerald-500',
+  HCL: 'bg-purple-500',
+}
+
 export function RegisterForm() {
   const addRepository = useRegistryStore((s) => s.addRepository)
   const navigate = useNavigate()
   const { isGitHubConnected, connectGitHub } = useGitHubAuth()
   const [analyzedRepo, setAnalyzedRepo] = useState<RegisteredRepository | null>(null)
+  const [ghRepos, setGhRepos] = useState<GitHubRepo[]>([])
+  const [loadingRepos, setLoadingRepos] = useState(false)
+  const [repoFilter, setRepoFilter] = useState('')
+  const [analyzingUrl, setAnalyzingUrl] = useState<string | null>(null)
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null)
 
   const {
     register,
@@ -56,6 +87,32 @@ export function RegisterForm() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
   })
+
+  useEffect(() => {
+    if (isGitHubConnected) {
+      setLoadingRepos(true)
+      apiFetch<GitHubRepo[]>('/api/github/repos?per_page=100')
+        .then(setGhRepos)
+        .catch(() => setGhRepos([]))
+        .finally(() => setLoadingRepos(false))
+    }
+  }, [isGitHubConnected])
+
+  const analyzeRepo = async (githubUrl: string) => {
+    setAnalyzingUrl(githubUrl)
+    setAnalyzeError(null)
+    try {
+      const repo = await apiFetch<RegisteredRepository>('/api/repos/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ githubUrl }),
+      })
+      setAnalyzedRepo(repo)
+    } catch {
+      setAnalyzeError('Failed to analyze repository. Please try again.')
+    } finally {
+      setAnalyzingUrl(null)
+    }
+  }
 
   const onAnalyze = async (data: FormValues) => {
     const parsed = parseGitHubUrl(data.githubUrl)
@@ -97,7 +154,6 @@ export function RegisterForm() {
         />
         <CardContent>
           <div className="space-y-4">
-            {/* Detection results */}
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -194,6 +250,10 @@ export function RegisterForm() {
     )
   }
 
+  const filteredRepos = ghRepos.filter((r) =>
+    r.fullName.toLowerCase().includes(repoFilter.toLowerCase()),
+  )
+
   return (
     <Card className="mx-auto max-w-lg">
       <CardHeader
@@ -213,6 +273,84 @@ export function RegisterForm() {
             </div>
           </div>
         )}
+
+        {isGitHubConnected && (
+          <div className="mb-5">
+            <div className="relative mb-3">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Filter repositories..."
+                value={repoFilter}
+                onChange={(e) => setRepoFilter(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500"
+              />
+            </div>
+
+            {loadingRepos ? (
+              <div className="flex items-center justify-center py-8 text-slate-400">
+                <Loader2 size={20} className="animate-spin" />
+                <span className="ml-2 text-sm">Loading repositories...</span>
+              </div>
+            ) : filteredRepos.length > 0 ? (
+              <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-1 dark:border-slate-700">
+                {filteredRepos.map((repo) => (
+                  <button
+                    key={repo.id}
+                    onClick={() => analyzeRepo(repo.htmlUrl)}
+                    disabled={analyzingUrl !== null}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-slate-50 disabled:opacity-50 dark:hover:bg-slate-800/50"
+                  >
+                    <img
+                      src={repo.ownerAvatar}
+                      alt={repo.owner}
+                      className="h-6 w-6 rounded-full"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {repo.fullName}
+                        </p>
+                        {repo.isPrivate && (
+                          <Lock size={10} className="flex-shrink-0 text-slate-400" />
+                        )}
+                      </div>
+                      {repo.description && (
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                          {repo.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-2">
+                      {repo.language && (
+                        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                          <span className={`h-2 w-2 rounded-full ${languageColor[repo.language] ?? 'bg-slate-400'}`} />
+                          {repo.language}
+                        </span>
+                      )}
+                      {analyzingUrl === repo.htmlUrl && (
+                        <Loader2 size={14} className="animate-spin text-sky-500" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="py-6 text-center text-sm text-slate-400">No repositories found</p>
+            )}
+
+            {analyzeError && (
+              <p className="mt-2 text-xs text-red-600 dark:text-red-400">{analyzeError}</p>
+            )}
+
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+              <span className="text-slate-400 text-xs dark:text-slate-600">or enter URL manually</span>
+              <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onAnalyze)} className="space-y-5">
           <Input
             label="GitHub Repository URL"
