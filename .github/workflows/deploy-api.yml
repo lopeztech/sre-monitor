@@ -97,7 +97,7 @@ jobs:
             --image="$IMAGE" \
             --region=${{ env.REGION }} \
             --project=${{ env.PROJECT_ID }} \
-            --set-secrets=GITHUB_TOKEN=github-token:latest,GITHUB_OAUTH_CLIENT_ID=github-oauth-client-id:latest,GITHUB_OAUTH_CLIENT_SECRET=github-oauth-client-secret:latest,JWT_SECRET=jwt-secret:latest,AWS_COST_EXPLORER_ACCESS_KEY_ID=aws-cost-explorer-access-key-id:latest,AWS_COST_EXPLORER_SECRET_ACCESS_KEY=aws-cost-explorer-secret-access-key:latest,AZURE_COST_MGMT_TENANT_ID=azure-cost-mgmt-tenant-id:latest,AZURE_COST_MGMT_CLIENT_ID=azure-cost-mgmt-client-id:latest,AZURE_COST_MGMT_CLIENT_SECRET=azure-cost-mgmt-client-secret:latest \
+            --set-secrets=GITHUB_OAUTH_CLIENT_ID=github-oauth-client-id:latest,GITHUB_OAUTH_CLIENT_SECRET=github-oauth-client-secret:latest,JWT_SECRET=jwt-secret:latest \
             --set-env-vars=GCP_BILLING_PROJECT_ID=sre-monitor-lcd,GCP_BILLING_DATASET=billing_export,GCP_BILLING_TABLE=gcp_billing_export_v1
 
       - name: Summary
