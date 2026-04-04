@@ -44,8 +44,9 @@ declare module '@tanstack/react-router' {
 }
 
 function AppInner() {
-  const { isGuest } = useAuth()
+  const { isGuest, isAuthenticated } = useAuth()
   const seedDemoRepos = useRegistryStore((s) => s.seedDemoRepos)
+  const clearDemoRepos = useRegistryStore((s) => s.clearDemoRepos)
   const workerRef = useRef<{ stop: () => void } | null>(null)
   const [mockReady, setMockReady] = useState(!isGuest)
 
@@ -67,9 +68,12 @@ function AppInner() {
         workerRef.current.stop()
         workerRef.current = null
       }
+      if (isAuthenticated) {
+        clearDemoRepos()
+      }
       setMockReady(true)
     }
-  }, [isGuest, seedDemoRepos])
+  }, [isGuest, isAuthenticated, seedDemoRepos, clearDemoRepos])
 
   if (!mockReady) return null
 

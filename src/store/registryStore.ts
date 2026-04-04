@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware'
 import type { RegisteredRepository, RepoStatus, RepositoryAnalysis } from '@/types/repository'
 import { repositoryFixtures } from '@/mocks/fixtures/repositories'
 
+const DEMO_REPO_IDS = new Set(repositoryFixtures.map((r) => r.id))
+
 interface RegistryStore {
   repositories: RegisteredRepository[]
   addRepository: (repo: RegisteredRepository) => void
@@ -10,6 +12,7 @@ interface RegistryStore {
   updateRepositoryStatus: (id: string, status: RepoStatus) => void
   updateRepositoryAnalysis: (id: string, analysis: RepositoryAnalysis) => void
   seedDemoRepos: () => void
+  clearDemoRepos: () => void
 }
 
 export const useRegistryStore = create<RegistryStore>()(
@@ -46,6 +49,12 @@ export const useRegistryStore = create<RegistryStore>()(
         if (repositories.length === 0) {
           set({ repositories: repositoryFixtures })
         }
+      },
+
+      clearDemoRepos: () => {
+        set((state) => ({
+          repositories: state.repositories.filter((r) => !DEMO_REPO_IDS.has(r.id)),
+        }))
       },
     }),
     {
