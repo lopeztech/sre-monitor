@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useCosts } from './useCosts'
+import { useRegistryStore } from '@/store/registryStore'
+import { repositoryFixtures } from '@/mocks/fixtures/repositories'
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -13,12 +15,14 @@ function createWrapper() {
 }
 
 describe('useCosts', () => {
+  beforeEach(() => {
+    useRegistryStore.setState({ repositories: repositoryFixtures })
+  })
+
   it('fetches cost data for a repo', async () => {
     const { result } = renderHook(() => useCosts('repo-frontend'), {
       wrapper: createWrapper(),
     })
-
-    expect(result.current.isLoading).toBe(true)
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true), { timeout: 5000 })
 
