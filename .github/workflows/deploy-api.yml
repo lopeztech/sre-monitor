@@ -1,4 +1,4 @@
-name: Deploy API (Cloud Functions)
+name: Deploy API (Cloud Run)
 
 on:
   push:
@@ -11,7 +11,8 @@ on:
 env:
   PROJECT_ID: sre-monitor-lcd
   REGION: australia-southeast1
-  FUNCTION_NAME: sre-monitor-api
+  SERVICE_NAME: sre-monitor
+  AR_REPO: sre-monitor-images
 
 permissions:
   contents: read
@@ -45,6 +46,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run lint
       - run: npm test
 
   smoke-test:
@@ -70,15 +72,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: functions/package-lock.json
-
-      - run: cd functions && npm ci
-      - run: cd functions && npm run build
-
       - name: Authenticate to Google Cloud (WIF)
         uses: google-github-actions/auth@v2
         with:
@@ -88,25 +81,28 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy Cloud Function
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push container image
         run: |
-          gcloud functions deploy ${{ env.FUNCTION_NAME }} \
-            --gen2 \
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -f functions/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image="$IMAGE" \
             --region=${{ env.REGION }} \
             --project=${{ env.PROJECT_ID }} \
-            --runtime=nodejs22 \
-            --trigger-http \
-            --entry-point=api \
-            --source=functions \
-            --set-secrets=GITHUB_TOKEN=github-token:latest,GITHUB_OAUTH_CLIENT_ID=github-oauth-client-id:latest,GITHUB_OAUTH_CLIENT_SECRET=github-oauth-client-secret:latest,JWT_SECRET=jwt-secret:latest \
-            --memory=256Mi \
-            --timeout=60s \
-            --min-instances=0 \
-            --max-instances=3
+            --set-secrets=GITHUB_TOKEN=github-token:latest,GITHUB_OAUTH_CLIENT_ID=github-oauth-client-id:latest,GITHUB_OAUTH_CLIENT_SECRET=github-oauth-client-secret:latest,JWT_SECRET=jwt-secret:latest,AWS_COST_EXPLORER_ACCESS_KEY_ID=aws-cost-explorer-access-key-id:latest,AWS_COST_EXPLORER_SECRET_ACCESS_KEY=aws-cost-explorer-secret-access-key:latest,AZURE_COST_MGMT_TENANT_ID=azure-cost-mgmt-tenant-id:latest,AZURE_COST_MGMT_CLIENT_ID=azure-cost-mgmt-client-id:latest,AZURE_COST_MGMT_CLIENT_SECRET=azure-cost-mgmt-client-secret:latest \
+            --set-env-vars=GCP_BILLING_PROJECT_ID=sre-monitor-lcd,GCP_BILLING_DATASET=billing_export,GCP_BILLING_TABLE=gcp_billing_export_v1
 
       - name: Summary
         run: |
-          echo "### Deployed Cloud Function" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Function:** \`${{ env.FUNCTION_NAME }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Deployed API to Cloud Run" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Service:** \`${{ env.SERVICE_NAME }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Region:** \`${{ env.REGION }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"

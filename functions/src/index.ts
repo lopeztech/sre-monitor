@@ -1,8 +1,10 @@
 import { http } from '@google-cloud/functions-framework'
 import { fetchPipelineSummary } from './services/pipelines.js'
+import { fetchCostSummary } from './services/costs.js'
 import { analyzeRepository } from './services/analyzer.js'
 import { createSessionJwt, verifySessionJwt } from './services/auth.js'
 import type { GitHubUser } from '../../shared/types/auth.js'
+import type { CloudProvider } from '../../shared/types/repository.js'
 
 const ALLOWED_ORIGINS = [
   'https://sre.lopezcloud.dev',
@@ -149,7 +151,7 @@ http('api', async (req, res) => {
   }
 
   // GET /api/health
-  if (path === '/api/health' || path === '/') {
+  if (path === '/api/health' || path === '/health' || path === '/') {
     res.json({ status: 'ok', timestamp: new Date().toISOString() })
     return
   }
@@ -188,6 +190,34 @@ http('api', async (req, res) => {
       const status = message.includes('Not Found') ? 404 : 500
       console.error(`Error fetching pipelines for ${owner}/${repo}:`, err)
       res.status(status).json({ error: message })
+    }
+    return
+  }
+
+  // GET /api/repos/:repoId/costs?provider=aws|gcp|azure&accountId=XXXXX
+  const costsMatch = path.match(/^\/api\/repos\/([^/]+)\/costs$/)
+  if (costsMatch) {
+    const repoId = costsMatch[1]
+    const provider = req.query.provider as string | undefined
+    const accountId = req.query.accountId as string | undefined
+
+    if (!provider || !accountId) {
+      res.status(400).json({ error: 'Missing required query params: provider, accountId' })
+      return
+    }
+
+    if (!['aws', 'gcp', 'azure'].includes(provider)) {
+      res.status(400).json({ error: 'Invalid provider. Must be aws, gcp, or azure' })
+      return
+    }
+
+    try {
+      const summary = await fetchCostSummary(repoId, provider as CloudProvider, accountId)
+      res.json(summary)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Internal server error'
+      console.error(`Error fetching costs for ${repoId}:`, err)
+      res.status(500).json({ error: message })
     }
     return
   }
