@@ -5,8 +5,7 @@ import { useRegistryStore } from '@/store/registryStore'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog } from '@/components/ui/dialog'
-import { ArrowLeft, Trash2, Server, FileCode2, GitBranch, Shield, BarChart2, DollarSign, FileText, Eye, EyeOff, Cloud } from 'lucide-react'
+import { ArrowLeft, FileCode2, GitBranch, Shield, BarChart2, DollarSign, FileText, Eye, EyeOff, Cloud } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isSafeUrl } from '@/lib/url'
 import { usePreferencesStore } from '@/store/preferencesStore'
@@ -22,10 +21,8 @@ function RepoSettingsPage() {
   const { repoId } = useParams({ from: '/app/$repoId/settings' })
   const navigate = useNavigate()
   const repositories = useRegistryStore((s) => s.repositories)
-  const removeRepository = useRegistryStore((s) => s.removeRepository)
   const updateCloudProvider = useRegistryStore((s) => s.updateCloudProvider)
   const repo = repositories.find((r) => r.id === repoId)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const effectiveProvider = repo?.cloudProviderManual ?? repo?.analysis?.cloudProvider ?? 'unknown'
   const effectiveAccountId = repo?.cloudAccountIdManual ?? repo?.analysis?.cloudAccountId ?? ''
@@ -64,11 +61,6 @@ function RepoSettingsPage() {
   }
 
   const analysis = repo.analysis
-
-  const handleDelete = () => {
-    removeRepository(repoId)
-    navigate({ to: '/' })
-  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 space-y-6">
@@ -133,17 +125,6 @@ function RepoSettingsPage() {
           <CardHeader title="Analysis" subtitle={`Last analyzed: ${new Date(analysis.analyzedAt).toLocaleDateString()}`} />
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Server size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
-                <div>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Cloud Provider</p>
-                  <p className="text-sm text-slate-900 dark:text-slate-100">{analysis.cloudProvider.toUpperCase()}</p>
-                  {analysis.cloudAccountId && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Account: {analysis.cloudAccountId}</p>
-                  )}
-                </div>
-              </div>
-
               <div className="flex items-start gap-3">
                 <FileCode2 size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
                 <div>
@@ -325,47 +306,6 @@ function RepoSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Danger zone */}
-      <Card className="border-red-200 dark:border-red-900">
-        <CardHeader title="Danger Zone" subtitle="Irreversible actions" />
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Delete repository</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Remove this repository and all its monitoring data.
-              </p>
-            </div>
-            <Button variant="danger" size="sm" onClick={() => setShowDeleteDialog(true)}>
-              <Trash2 size={13} />
-              Delete
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Delete confirmation dialog */}
-      <Dialog
-        open={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        title="Delete Repository"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            Are you sure you want to delete <span className="font-semibold">{repo.fullName}</span>?
-            This will remove all monitoring data and cannot be undone.
-          </p>
-          <div className="flex justify-end gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setShowDeleteDialog(false)}>
-              Cancel
-            </Button>
-            <Button variant="danger" size="sm" onClick={handleDelete}>
-              <Trash2 size={13} />
-              Delete Repository
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </div>
   )
 }
