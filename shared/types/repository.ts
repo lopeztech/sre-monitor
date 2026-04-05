@@ -22,4 +22,6 @@ export interface RegisteredRepository {
   registeredAt: string
   status: RepoStatus
   analysis: RepositoryAnalysis | null
+  cloudProviderManual?: CloudProvider
+  cloudAccountIdManual?: string
 }

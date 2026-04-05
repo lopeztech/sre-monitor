@@ -5,8 +5,8 @@ import { QUERY_STALE_TIMES } from '@/lib/constants'
 
 export function useCosts(repoId: string) {
   const repo = useRegistryStore((s) => s.repositories.find((r) => r.id === repoId))
-  const provider = repo?.analysis?.cloudProvider
-  const accountId = repo?.analysis?.cloudAccountId
+  const provider = repo?.cloudProviderManual ?? repo?.analysis?.cloudProvider
+  const accountId = repo?.cloudAccountIdManual ?? repo?.analysis?.cloudAccountId
 
   return useQuery({
     queryKey: ['costs', repoId, provider, accountId],

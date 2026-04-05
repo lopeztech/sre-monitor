@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog } from '@/components/ui/dialog'
-import { ArrowLeft, Trash2, Server, FileCode2, GitBranch, Shield, BarChart2, DollarSign, FileText, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Trash2, Server, FileCode2, GitBranch, Shield, BarChart2, DollarSign, FileText, Eye, EyeOff, Cloud } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isSafeUrl } from '@/lib/url'
 import { usePreferencesStore } from '@/store/preferencesStore'
+import type { CloudProvider } from '@/types/repository'
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -22,8 +23,26 @@ function RepoSettingsPage() {
   const navigate = useNavigate()
   const repositories = useRegistryStore((s) => s.repositories)
   const removeRepository = useRegistryStore((s) => s.removeRepository)
+  const updateCloudProvider = useRegistryStore((s) => s.updateCloudProvider)
   const repo = repositories.find((r) => r.id === repoId)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const effectiveProvider = repo?.cloudProviderManual ?? repo?.analysis?.cloudProvider ?? 'unknown'
+  const effectiveAccountId = repo?.cloudAccountIdManual ?? repo?.analysis?.cloudAccountId ?? ''
+  const [selectedProvider, setSelectedProvider] = useState<CloudProvider>(effectiveProvider)
+  const [accountId, setAccountId] = useState(effectiveAccountId)
+  const [cloudSaved, setCloudSaved] = useState(false)
+
+  const hasCloudChanges =
+    selectedProvider !== effectiveProvider || accountId !== effectiveAccountId
+
+  const handleSaveCloudProvider = () => {
+    const provider = selectedProvider === 'unknown' ? undefined : selectedProvider
+    const account = accountId.trim() || undefined
+    updateCloudProvider(repoId, provider, account)
+    setCloudSaved(true)
+    setTimeout(() => setCloudSaved(false), 2000)
+  }
   const { getRepoPrefs, setDefaultTab, toggleTabVisibility } = usePreferencesStore()
   const prefs = getRepoPrefs(repoId)
 
@@ -183,6 +202,76 @@ function RepoSettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Cloud provider override */}
+      <Card>
+        <CardHeader
+          title="Cloud Provider"
+          subtitle={
+            analysis?.cloudProvider && analysis.cloudProvider !== 'unknown'
+              ? `Auto-detected: ${analysis.cloudProvider.toUpperCase()}. Override below if incorrect.`
+              : 'No cloud provider detected. Select one to enable cost monitoring.'
+          }
+        />
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <Cloud size={14} className="mt-2 flex-shrink-0 text-slate-400" />
+              <div className="flex-1 space-y-3">
+                <div>
+                  <label htmlFor="cloud-provider" className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Provider
+                  </label>
+                  <select
+                    id="cloud-provider"
+                    value={selectedProvider}
+                    onChange={(e) => setSelectedProvider(e.target.value as CloudProvider)}
+                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="unknown">Not set</option>
+                    <option value="aws">AWS</option>
+                    <option value="gcp">GCP</option>
+                    <option value="azure">Azure</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="cloud-account-id" className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Account / Project ID
+                  </label>
+                  <input
+                    id="cloud-account-id"
+                    type="text"
+                    value={accountId}
+                    onChange={(e) => setAccountId(e.target.value)}
+                    placeholder={
+                      selectedProvider === 'aws'
+                        ? '123456789012'
+                        : selectedProvider === 'gcp'
+                          ? 'my-project-id'
+                          : selectedProvider === 'azure'
+                            ? 'subscription-id'
+                            : 'Select a provider first'
+                    }
+                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-600"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              {cloudSaved && (
+                <span className="text-xs text-emerald-600 dark:text-emerald-400">Saved</span>
+              )}
+              <Button
+                size="sm"
+                onClick={handleSaveCloudProvider}
+                disabled={!hasCloudChanges}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Dashboard customization */}
       <Card>

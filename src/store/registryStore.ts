@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { RegisteredRepository, RepoStatus, RepositoryAnalysis } from '@/types/repository'
+import type { CloudProvider, RegisteredRepository, RepoStatus, RepositoryAnalysis } from '@/types/repository'
 import { repositoryFixtures } from '@/mocks/fixtures/repositories'
 
 const DEMO_REPO_IDS = new Set(repositoryFixtures.map((r) => r.id))
@@ -11,6 +11,7 @@ interface RegistryStore {
   removeRepository: (id: string) => void
   updateRepositoryStatus: (id: string, status: RepoStatus) => void
   updateRepositoryAnalysis: (id: string, analysis: RepositoryAnalysis) => void
+  updateCloudProvider: (id: string, provider: CloudProvider | undefined, accountId: string | undefined) => void
   seedDemoRepos: () => void
   clearDemoRepos: () => void
 }
@@ -41,6 +42,15 @@ export const useRegistryStore = create<RegistryStore>()(
         set((state) => ({
           repositories: state.repositories.map((r) =>
             r.id === id ? { ...r, analysis, status: 'ready' } : r,
+          ),
+        })),
+
+      updateCloudProvider: (id, provider, accountId) =>
+        set((state) => ({
+          repositories: state.repositories.map((r) =>
+            r.id === id
+              ? { ...r, cloudProviderManual: provider, cloudAccountIdManual: accountId }
+              : r,
           ),
         })),
 
