@@ -99,8 +99,11 @@ describe('Smoke: Header', () => {
     expect(screen.getByText('acme-corp/frontend-app')).toBeInTheDocument()
     expect(screen.getByText('Test User')).toBeInTheDocument()
     expect(screen.getByLabelText('Toggle sidebar')).toBeInTheDocument()
-    expect(screen.getByLabelText('Sign out')).toBeInTheDocument()
+
+    // Sign out and Connect GitHub are now inside the settings modal
+    await userEvent.click(screen.getByText('Test User'))
     expect(screen.getByText('Connect GitHub')).toBeInTheDocument()
+    expect(screen.getByText('Sign Out')).toBeInTheDocument()
   })
 
   it('renders without repo context', async () => {
