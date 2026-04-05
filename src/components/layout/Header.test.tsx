@@ -61,8 +61,10 @@ describe('Header', () => {
     expect(screen.getByText('Test User')).toBeInTheDocument()
   })
 
-  it('renders theme toggle', () => {
+  it('renders theme toggle in settings modal', async () => {
     render(<Header />)
+    expect(screen.queryByTestId('theme-toggle')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByText('Test User'))
     expect(screen.getByTestId('theme-toggle')).toBeInTheDocument()
   })
 
