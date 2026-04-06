@@ -162,6 +162,13 @@ export function Header({ repoId }: HeaderProps) {
             </button>
           </div>
 
+          {/* Build info */}
+          <div>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+              Built: {new Date(__BUILD_TIME__).toLocaleString()}
+            </p>
+          </div>
+
           {/* Sign out */}
           <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
             <button
