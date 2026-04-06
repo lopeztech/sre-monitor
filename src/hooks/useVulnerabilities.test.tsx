@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useVulnerabilities } from './useVulnerabilities'
+import { useRegistryStore } from '@/store/registryStore'
+import { repositoryFixtures } from '@/mocks/fixtures/repositories'
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -13,6 +15,10 @@ function createWrapper() {
 }
 
 describe('useVulnerabilities', () => {
+  beforeEach(() => {
+    useRegistryStore.setState({ repositories: repositoryFixtures })
+  })
+
   it('fetches vulnerability data', async () => {
     const { result } = renderHook(() => useVulnerabilities('repo-frontend'), {
       wrapper: createWrapper(),

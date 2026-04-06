@@ -2,6 +2,7 @@ import { http } from '@google-cloud/functions-framework'
 import { fetchPipelineSummary } from './services/pipelines.js'
 import { fetchCostSummary } from './services/costs.js'
 import { fetchCoverageSummary } from './services/coverage.js'
+import { fetchVulnerabilitySummary } from './services/vulnerabilities.js'
 import { analyzeRepository } from './services/analyzer.js'
 import { createSessionJwt, verifySessionJwt } from './services/auth.js'
 import type { GitHubUser } from '../../shared/types/auth.js'
@@ -279,6 +280,29 @@ http('api', async (req, res) => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error'
       console.error(`Error fetching costs for ${repoId}:`, err)
+      res.status(500).json({ error: message })
+    }
+    return
+  }
+
+  // GET /api/repos/:repoId/vulnerabilities?owner=X&repo=Y
+  const vulnMatch = path.match(/^\/api\/repos\/([^/]+)\/vulnerabilities$/)
+  if (vulnMatch) {
+    const repoId = vulnMatch[1]
+    const owner = req.query.owner as string | undefined
+    const repo = req.query.repo as string | undefined
+
+    if (!owner || !repo) {
+      res.status(400).json({ error: 'Missing required query params: owner, repo' })
+      return
+    }
+
+    try {
+      const summary = await fetchVulnerabilitySummary(repoId, owner, repo, auth?.githubToken)
+      res.json(summary)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Internal server error'
+      console.error(`Error fetching vulnerabilities for ${owner}/${repo}:`, err)
       res.status(500).json({ error: message })
     }
     return
