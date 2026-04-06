@@ -5,11 +5,12 @@ import { useRegistryStore } from '@/store/registryStore'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, FileCode2, GitBranch, Shield, BarChart2, DollarSign, FileText, Eye, EyeOff, Cloud } from 'lucide-react'
+import { ArrowLeft, FileCode2, GitBranch, Shield, BarChart2, DollarSign, FileText, Eye, EyeOff, Cloud, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isSafeUrl } from '@/lib/url'
 import { usePreferencesStore } from '@/store/preferencesStore'
-import type { CloudProvider } from '@/types/repository'
+import { apiFetch } from '@/api/client'
+import type { CloudProvider, RegisteredRepository } from '@/types/repository'
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -22,7 +23,9 @@ function RepoSettingsPage() {
   const navigate = useNavigate()
   const repositories = useRegistryStore((s) => s.repositories)
   const updateCloudProvider = useRegistryStore((s) => s.updateCloudProvider)
+  const updateRepositoryAnalysis = useRegistryStore((s) => s.updateRepositoryAnalysis)
   const repo = repositories.find((r) => r.id === repoId)
+  const [reanalyzing, setReanalyzing] = useState(false)
 
   const effectiveProvider = repo?.cloudProviderManual ?? repo?.analysis?.cloudProvider ?? 'unknown'
   const effectiveAccountId = repo?.cloudAccountIdManual ?? repo?.analysis?.cloudAccountId ?? ''
@@ -40,6 +43,24 @@ function RepoSettingsPage() {
     setCloudSaved(true)
     setTimeout(() => setCloudSaved(false), 2000)
   }
+  const handleReanalyze = async () => {
+    if (!repo) return
+    setReanalyzing(true)
+    try {
+      const result = await apiFetch<RegisteredRepository>('/api/repos/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ url: repo.githubUrl }),
+      })
+      if (result.analysis) {
+        updateRepositoryAnalysis(repoId, result.analysis)
+      }
+    } catch (err) {
+      console.error('Re-analysis failed:', err)
+    } finally {
+      setReanalyzing(false)
+    }
+  }
+
   const { getRepoPrefs, setDefaultTab, toggleTabVisibility } = usePreferencesStore()
   const prefs = getRepoPrefs(repoId)
 
@@ -122,7 +143,16 @@ function RepoSettingsPage() {
       {/* Analysis details */}
       {analysis && (
         <Card>
-          <CardHeader title="Analysis" subtitle={`Last analyzed: ${new Date(analysis.analyzedAt).toLocaleDateString()}`} />
+          <CardHeader
+            title="Analysis"
+            subtitle={`Last analyzed: ${new Date(analysis.analyzedAt).toLocaleDateString()}`}
+            action={
+              <Button size="sm" variant="ghost" onClick={handleReanalyze} disabled={reanalyzing}>
+                <RefreshCw size={13} className={reanalyzing ? 'animate-spin' : ''} />
+                {reanalyzing ? 'Analyzing...' : 'Re-analyze'}
+              </Button>
+            }
+          />
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
