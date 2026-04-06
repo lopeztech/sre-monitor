@@ -3,6 +3,7 @@ import { fetchPipelineSummary } from './services/pipelines.js'
 import { fetchCostSummary } from './services/costs.js'
 import { fetchCoverageSummary } from './services/coverage.js'
 import { fetchVulnerabilitySummary } from './services/vulnerabilities.js'
+import { fetchLogSummary } from './services/logs.js'
 import { analyzeRepository } from './services/analyzer.js'
 import { createSessionJwt, verifySessionJwt } from './services/auth.js'
 import type { GitHubUser } from '../../shared/types/auth.js'
@@ -326,6 +327,29 @@ http('api', async (req, res) => {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error'
       console.error(`Error fetching coverage for ${owner}/${repo}:`, err)
+      res.status(500).json({ error: message })
+    }
+    return
+  }
+
+  // GET /api/repos/:repoId/logs?projectId=X&range=24h
+  const logsMatch = path.match(/^\/api\/repos\/([^/]+)\/logs$/)
+  if (logsMatch) {
+    const repoId = logsMatch[1]
+    const projectId = req.query.projectId as string | undefined
+    const range = (req.query.range as string) || '24h'
+
+    if (!projectId) {
+      res.status(400).json({ error: 'Missing required query param: projectId' })
+      return
+    }
+
+    try {
+      const summary = await fetchLogSummary(repoId, projectId, range)
+      res.json(summary)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Internal server error'
+      console.error(`Error fetching logs for ${projectId}:`, err)
       res.status(500).json({ error: message })
     }
     return
