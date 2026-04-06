@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useCoverage } from './useCoverage'
+import { useRegistryStore } from '@/store/registryStore'
+import { repositoryFixtures } from '@/mocks/fixtures/repositories'
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -13,6 +15,10 @@ function createWrapper() {
 }
 
 describe('useCoverage', () => {
+  beforeEach(() => {
+    useRegistryStore.setState({ repositories: repositoryFixtures })
+  })
+
   it('fetches coverage data', async () => {
     const { result } = renderHook(() => useCoverage('repo-frontend'), {
       wrapper: createWrapper(),
