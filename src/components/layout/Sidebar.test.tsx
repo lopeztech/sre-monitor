@@ -31,11 +31,6 @@ describe('Sidebar', () => {
     expect(screen.getByText('No repos yet')).toBeInTheDocument()
   })
 
-  it('renders Add Repository link', () => {
-    render(<Sidebar />)
-    expect(screen.getByText('Add Repository')).toBeInTheDocument()
-  })
-
   it('renders repos when available', () => {
     useRegistryStore.setState({
       repositories: [

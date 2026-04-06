@@ -118,7 +118,7 @@ describe('Smoke: Header', () => {
 // ── Sidebar ─────────────────────────────────────────────────────────────────
 
 describe('Smoke: Sidebar', () => {
-  it('renders repo list and add button', async () => {
+  it('renders repo list', async () => {
     const { Sidebar } = await import('@/components/layout/Sidebar')
     render(<Sidebar />)
 
@@ -126,7 +126,6 @@ describe('Smoke: Sidebar', () => {
     expect(screen.getByText('frontend-app')).toBeInTheDocument()
     expect(screen.getByText('data-pipeline')).toBeInTheDocument()
     expect(screen.getByText('api-service')).toBeInTheDocument()
-    expect(screen.getByText('Add Repository')).toBeInTheDocument()
   })
 
   it('hides title when collapsed', async () => {

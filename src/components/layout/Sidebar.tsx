@@ -1,9 +1,7 @@
-import { Link } from '@tanstack/react-router'
-import { PlusCircle, Activity } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import { useRegistryStore } from '@/store/registryStore'
 import { useUIStore } from '@/store/uiStore'
 import { RepoCard } from '@/components/repository/RepoCard'
-import { cn } from '@/lib/utils'
 
 export function Sidebar() {
   const repositories = useRegistryStore((s) => s.repositories)
@@ -42,20 +40,6 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Add Repository */}
-      <div className="flex-shrink-0 border-t border-slate-200 p-2 dark:border-slate-800">
-        <Link
-          to="/register"
-          className={cn(
-            'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 dark:text-slate-400',
-            'hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-colors',
-            collapsed && 'justify-center',
-          )}
-        >
-          <PlusCircle size={16} className="flex-shrink-0" />
-          {!collapsed && <span>Add Repository</span>}
-        </Link>
-      </div>
     </div>
   )
 }

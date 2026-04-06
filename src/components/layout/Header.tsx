@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { PanelLeftClose, PanelLeftOpen, LogOut, User, Unplug, Settings } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { PanelLeftClose, PanelLeftOpen, LogOut, User, Unplug, Settings, PlusCircle } from 'lucide-react'
 
 function GithubIcon({ size = 24 }: { size?: number }) {
   return (
@@ -35,6 +36,7 @@ export function Header({ repoId }: HeaderProps) {
   const repo = repoId ? repositories.find((r) => r.id === repoId) : null
   const { user, isGuest, logout } = useAuth()
   const { githubUser, isGitHubConnected, connectGitHub, disconnectGitHub } = useGitHubAuth()
+  const navigate = useNavigate()
   const [showSettings, setShowSettings] = useState(false)
 
   return (
@@ -143,6 +145,21 @@ export function Header({ repoId }: HeaderProps) {
                 Connect GitHub
               </button>
             )}
+          </div>
+
+          {/* Add Repository */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-500 dark:text-slate-400">Repositories</p>
+            <button
+              onClick={() => {
+                setShowSettings(false)
+                navigate({ to: '/register' })
+              }}
+              className="flex w-full items-center gap-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-colors dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800 dark:hover:border-slate-600"
+            >
+              <PlusCircle size={16} />
+              Add Repository
+            </button>
           </div>
 
           {/* Sign out */}
