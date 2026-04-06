@@ -110,7 +110,7 @@ async function fetchGcpCosts(accountId: string, startDate: string, endDate: stri
       service.description AS service_name,
       SUM(cost + IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)) AS amount
     FROM \`${projectId}.${dataset}.${table}\`
-    WHERE billing_account_id = @accountId
+    WHERE project.id = @accountId
       AND DATE(usage_start_time) >= @startDate
       AND DATE(usage_start_time) <= @endDate
     GROUP BY date, service_id, service_name
