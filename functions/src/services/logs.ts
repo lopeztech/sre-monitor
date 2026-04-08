@@ -162,12 +162,8 @@ function mapSeverity(severity: string): LogSeverity {
   return 'WARNING'
 }
 
-interface RawEntry {
-  metadata: { severity?: string; timestamp?: string }
-}
-
 function buildHistogram(
-  entries: RawEntry[],
+  entries: Array<{ metadata: Record<string, unknown> }>,
   startTime: Date,
   bucketMs: number,
 ): ErrorRateDataPoint[] {
