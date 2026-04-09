@@ -1,27 +1,71 @@
-# React + TypeScript + Vite
+# SRE Monitor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A dashboard for monitoring GitHub repositories across cost, pipelines, security, logs, and code coverage.
 
-Currently, two official plugins are available:
+**Live:** [sre.lopezcloud.dev](https://sre.lopezcloud.dev)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## Expanding the ESLint configuration
+- **Frontend:** React 18, TypeScript, Vite, TanStack Router & Query, Zustand, Recharts, Tailwind CSS
+- **Backend:** Node.js Cloud Run service (Google Cloud Functions Framework)
+- **Infrastructure:** GCS (static hosting), Cloud Run, BigQuery, Cloud Logging
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Tabs
 
-- Configure the top-level `parserOptions` property like this:
+| Tab | Data Source |
+|-----|------------|
+| Costs | AWS Cost Explorer, GCP BigQuery billing export, Azure Cost Management |
+| Pipelines | GitHub Actions API |
+| Security | GitHub Dependabot Alerts API |
+| Logs | Google Cloud Logging |
+| Coverage | Codecov API |
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
+## Project Structure
+
+```
+src/              Frontend (React SPA)
+functions/        Backend (Cloud Run API)
+shared/           Shared TypeScript types
+.github/workflows CI/CD pipelines
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## Development
+
+```bash
+npm install                 # install frontend deps
+npm run dev                 # start dev server (localhost:5173)
+
+cd functions && npm install # install backend deps
+npm run dev                 # start API locally
+```
+
+## Scripts
+
+```bash
+npm run build          # type-check + production build
+npm run lint           # ESLint
+npm test               # run tests (Vitest)
+npm run test:coverage  # tests with coverage report
+```
+
+## Deployment
+
+Both frontend and backend deploy automatically on push to `master`:
+
+- **Frontend** (`deploy.yml`): Builds and uploads to GCS, served via Cloud CDN
+- **Backend** (`deploy-api.yml`): Builds Docker image, deploys to Cloud Run in `australia-southeast1`
+
+## Authentication
+
+Uses GitHub OAuth for repo access. Users connect their GitHub account to view private repository data. Sessions are stored as encrypted JWTs (7-day expiry).
+
+## Environment Variables (Backend)
+
+| Variable | Description |
+|----------|------------|
+| `GITHUB_OAUTH_CLIENT_ID` | GitHub OAuth App client ID (secret) |
+| `GITHUB_OAUTH_CLIENT_SECRET` | GitHub OAuth App client secret (secret) |
+| `JWT_SECRET` | Session JWT signing key (secret) |
+| `GCP_BILLING_PROJECT_ID` | GCP project for BigQuery billing queries |
+| `GCP_BILLING_DATASET` | BigQuery dataset name |
+| `GCP_BILLING_TABLE` | BigQuery billing export table name |
