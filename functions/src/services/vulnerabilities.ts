@@ -120,6 +120,10 @@ export async function fetchVulnerabilitySummary(
     return emptyResult(repoId)
   }
 
+  if (response.status === 401) {
+    throw new Error('Bad credentials')
+  }
+
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     throw new Error(`GitHub Dependabot API error ${response.status}: ${text}`)
