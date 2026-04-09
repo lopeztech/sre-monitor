@@ -29,7 +29,7 @@ export function GitHubAuthProvider({ children }: { children: React.ReactNode }) 
   })
   const [isConnecting, setIsConnecting] = useState(false)
 
-  // Verify stored JWT on mount
+  // Verify stored JWT on mount — if GitHub token expired, re-initiate OAuth
   useEffect(() => {
     const jwt = localStorage.getItem(JWT_KEY)
     if (!jwt) return
@@ -46,9 +46,25 @@ export function GitHubAuthProvider({ children }: { children: React.ReactNode }) 
         localStorage.setItem(USER_KEY, JSON.stringify(data.user))
       })
       .catch(() => {
+        // Token expired or invalid — clear and re-initiate OAuth
         localStorage.removeItem(JWT_KEY)
         localStorage.removeItem(USER_KEY)
         setGitHubUser(null)
+
+        const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
+        if (clientId) {
+          const state = crypto.randomUUID()
+          sessionStorage.setItem(OAUTH_STATE_KEY, state)
+          sessionStorage.setItem(RETURN_URL_KEY, window.location.pathname)
+
+          const params = new URLSearchParams({
+            client_id: clientId,
+            scope: 'repo read:org read:packages',
+            redirect_uri: `${window.location.origin}/auth/github/callback`,
+            state,
+          })
+          window.location.href = `https://github.com/login/oauth/authorize?${params}`
+        }
       })
   }, [])
 

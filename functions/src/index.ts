@@ -167,6 +167,24 @@ http('api', async (req, res) => {
       res.status(401).json({ error: 'Invalid or missing token' })
       return
     }
+
+    // Verify the GitHub token is still valid by calling GitHub API
+    try {
+      const ghResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          Authorization: `Bearer ${auth.githubToken}`,
+          Accept: 'application/vnd.github+json',
+        },
+      })
+      if (!ghResponse.ok) {
+        res.status(401).json({ error: 'GitHub token expired' })
+        return
+      }
+    } catch {
+      res.status(401).json({ error: 'Failed to verify GitHub token' })
+      return
+    }
+
     res.json({ valid: true, user: auth.ghUser })
     return
   }
