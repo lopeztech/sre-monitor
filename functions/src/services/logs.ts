@@ -53,11 +53,12 @@ export async function fetchLogSummary(
 
   let entries: Array<{ metadata: Record<string, unknown>; data: unknown }>
   try {
-    ;[entries] = await logging.getEntries({
+    const result = await logging.getEntries({
       filter,
       orderBy: 'timestamp desc',
       pageSize: 500,
     })
+    entries = result[0]
   } catch (err) {
     const msg = err instanceof Error ? err.message : ''
     // Permission denied or project not found — return empty rather than 500
