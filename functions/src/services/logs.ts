@@ -51,11 +51,31 @@ export async function fetchLogSummary(
     'severity >= ERROR',
   ].join(' AND ')
 
-  const [entries] = await logging.getEntries({
-    filter,
-    orderBy: 'timestamp desc',
-    pageSize: 500,
-  })
+  let entries: Array<{ metadata: Record<string, unknown>; data: unknown }>
+  try {
+    ;[entries] = await logging.getEntries({
+      filter,
+      orderBy: 'timestamp desc',
+      pageSize: 500,
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : ''
+    // Permission denied or project not found — return empty rather than 500
+    if (msg.includes('PERMISSION_DENIED') || msg.includes('NOT_FOUND') || msg.includes('INVALID_ARGUMENT')) {
+      return {
+        repoId,
+        source: 'gcp_logging',
+        timeRange,
+        totalErrors: 0,
+        totalCritical: 0,
+        topServices: [],
+        errorRateHistory: [],
+        entries: [],
+        lastUpdated: new Date().toISOString(),
+      }
+    }
+    throw err
+  }
 
   // Map to our LogEntry type
   const logEntries: LogEntry[] = []

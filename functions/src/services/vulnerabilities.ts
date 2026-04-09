@@ -115,7 +115,7 @@ export async function fetchVulnerabilitySummary(
     { headers },
   )
 
-  if (response.status === 404) {
+  if (response.status === 403 || response.status === 404) {
     // Dependabot not enabled or repo not found — return empty
     return emptyResult(repoId)
   }
