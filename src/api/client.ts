@@ -35,6 +35,14 @@ export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T
     } catch {
       // ignore parse errors
     }
+
+    // Expired or revoked GitHub token — clear session so UI prompts re-auth
+    if (response.status === 401) {
+      localStorage.removeItem('sre_monitor_github_jwt')
+      localStorage.removeItem('sre_monitor_github_user')
+      window.dispatchEvent(new Event('github-auth-expired'))
+    }
+
     throw new ApiError(response.status, message)
   }
 

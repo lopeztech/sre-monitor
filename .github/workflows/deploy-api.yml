@@ -98,7 +98,7 @@ jobs:
             --region=${{ env.REGION }} \
             --project=${{ env.PROJECT_ID }} \
             --set-secrets=GITHUB_OAUTH_CLIENT_ID=github-oauth-client-id:latest,GITHUB_OAUTH_CLIENT_SECRET=github-oauth-client-secret:latest,JWT_SECRET=jwt-secret:latest \
-            --set-env-vars=GCP_BILLING_PROJECT_ID=sre-monitor-lcd,GCP_BILLING_DATASET=billing_export,GCP_BILLING_TABLE=gcp_billing_export_v1
+            --set-env-vars=GCP_BILLING_PROJECT_ID=sre-monitor-lcd,GCP_BILLING_DATASET=billing_export,GCP_BILLING_TABLE=gcp_billing_export_resource_v1_01163B_FA4421_0C1CFE
 
       - name: Summary
         run: |

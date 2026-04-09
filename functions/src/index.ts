@@ -135,7 +135,9 @@ http('api', async (req, res) => {
         res.json(result)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Internal server error'
-        const status = message.includes('Not Found') ? 404 : 500
+        const status = message.includes('Not Found') ? 404
+          : message.includes('Bad credentials') ? 401
+          : 500
         console.error(`Error analyzing ${githubUrl}:`, err)
         res.status(status).json({ error: message })
       }
@@ -251,7 +253,9 @@ http('api', async (req, res) => {
       res.json(summary)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error'
-      const status = message.includes('Not Found') ? 404 : 500
+      const status = message.includes('Not Found') ? 404
+        : message.includes('Bad credentials') ? 401
+        : 500
       console.error(`Error fetching pipelines for ${owner}/${repo}:`, err)
       res.status(status).json({ error: message })
     }
@@ -303,8 +307,9 @@ http('api', async (req, res) => {
       res.json(summary)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error'
+      const status = message.includes('Bad credentials') ? 401 : 500
       console.error(`Error fetching vulnerabilities for ${owner}/${repo}:`, err)
-      res.status(500).json({ error: message })
+      res.status(status).json({ error: message })
     }
     return
   }
@@ -326,8 +331,9 @@ http('api', async (req, res) => {
       res.json(summary)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Internal server error'
+      const status = message.includes('Bad credentials') ? 401 : 500
       console.error(`Error fetching coverage for ${owner}/${repo}:`, err)
-      res.status(500).json({ error: message })
+      res.status(status).json({ error: message })
     }
     return
   }

@@ -52,6 +52,13 @@ export function GitHubAuthProvider({ children }: { children: React.ReactNode }) 
       })
   }, [])
 
+  // Listen for token expiry events from the API client
+  useEffect(() => {
+    const handleExpired = () => setGitHubUser(null)
+    window.addEventListener('github-auth-expired', handleExpired)
+    return () => window.removeEventListener('github-auth-expired', handleExpired)
+  }, [])
+
   const connectGitHub = useCallback(() => {
     const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
     if (!clientId) {
