@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "sre-monitor-lcd"
+  },
+  "targets": {
+    "sre-monitor-lcd": {
+      "hosting": {
+        "sre-monitor": ["sre-monitor-lcd-sre-monitor"]
+      }
+    }
+  }
+}
